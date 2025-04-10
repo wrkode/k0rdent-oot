@@ -17,7 +17,9 @@ clusterIdentityKinds:
 EOF
 ```
 
-## Restart `KCM` manager controller
+## [OPTIONAL] Restart `KCM` manager controller
+
+> Note: update to the `ConfigMap` that was done in the previous step should trigger the required manager restart
 
 ```bash
 kubectl -n kcm-system rollout restart deployment/kcm-controller-manager
@@ -42,14 +44,14 @@ spec:
 apiVersion: k0rdent.mirantis.com/v1alpha1
 kind: ProviderTemplate
 metadata:
-  name: cluster-api-provider-kubevirt-0-2-0
+  name: cluster-api-provider-kubevirt-0-2-1
   annotations:
     helm.sh/resource-policy: keep
 spec:
   helm:
     chartSpec:
       chart: cluster-api-provider-kubevirt
-      version: 0.2.0
+      version: 0.2.1
       interval: 10m0s
       sourceRef:
         kind: HelmRepository
@@ -78,7 +80,7 @@ EOF
 
 ```bash
 until kubectl patch management kcm --type=json -p='[
-  {"op": "add", "path": "/spec/providers/-", "value": {"name": "cluster-api-provider-kubevirt", "template": "cluster-api-provider-kubevirt-0-2-0"}}
+  {"op": "add", "path": "/spec/providers/-", "value": {"name": "cluster-api-provider-kubevirt", "template": "cluster-api-provider-kubevirt-0-2-1"}}
 ]'; do
   sleep 5
 done
@@ -90,7 +92,9 @@ done
 kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
 ```
 
-## Install `KubeVirt` charts
+## [OPTIONAL] Install `KubeVirt` charts manually
+
+> Note: not explicitly required as `cluster-api-provider-kubevirt` chart has a dependency on `KubeVirt` charts
 
 ```bash
 export KUBEVIRT_VERSION=$(curl -s "https://api.github.com/repos/kubevirt/kubevirt/releases/latest" | jq -r ".tag_name")
@@ -106,11 +110,18 @@ done
 until kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true}}}}' ; do
   sleep 5
 done
+```
 
+## Wait for `KubeVirt` objects readiness
+
+```bash
 kubectl wait -n kubevirt kv kubevirt --for=condition=Available --timeout=10m
 ```
 
-## Install `KubeVirt` CLI
+## [OPTIONAL] Install `KubeVirt` CLI
+
+> Note: needed for manual VM management
+
 ```bash
 KUBEVIRT_VERSION=$(kubectl get kubevirt.kubevirt.io/kubevirt -n kubevirt -o=jsonpath="{.status.observedKubeVirtVersion}")
 ARCH=$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/amd64/')

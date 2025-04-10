@@ -2,11 +2,6 @@ name: Publish Helm Charts
 
 on:
   workflow_dispatch:
-    inputs:
-      chart_version:
-        description: 'Chart version override (optional)'
-        required: false
-        type: string
 
 jobs:
   publish-charts:
@@ -40,38 +35,62 @@ jobs:
 
       - name: Find all charts
         id: find_charts
+        shell: bash
         run: |
           CHARTS=$(find ./charts -type f -name "Chart.yaml" | sed -e 's|/Chart.yaml||g')
           echo "Found charts in: $CHARTS"
           echo "chart_dirs=$(echo $CHARTS | tr ' ' ',')" >> $GITHUB_OUTPUT
 
-      - name: Package and Push Helm Charts
+      - name: First Pass - Package and Push Independent Charts
+        shell: bash
         run: |
           IFS=',' read -ra CHART_DIRS <<< "${{ steps.find_charts.outputs.chart_dirs }}"
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
+          echo "First iteration: Publishing charts (some might fail due to unresolved dependencies)"
           for CHART_DIR in "${CHART_DIRS[@]}"; do
             echo "Processing chart in $CHART_DIR"
 
-            # Extract chart name and version
             CHART_NAME=$(yq eval '.name' "$CHART_DIR/Chart.yaml")
             CHART_VERSION=$(yq eval '.version' "$CHART_DIR/Chart.yaml")
 
-            # Override version if specified
-            if [ -n "${{ inputs.chart_version }}" ]; then
-              CHART_VERSION="${{ inputs.chart_version }}"
-              echo "Overriding chart version to $CHART_VERSION"
-              yq eval '.version = "'"$CHART_VERSION"'"' -i "$CHART_DIR/Chart.yaml"
+            echo "Attempting to publish $CHART_NAME version $CHART_VERSION"
+
+            helm package "$CHART_DIR" --version "$CHART_VERSION" || echo "Failed to package $CHART_NAME - will retry in second pass"
+
+            if [ -f "${CHART_NAME}-${CHART_VERSION}.tgz" ]; then
+              helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://ghcr.io/${REPO_NAME}/charts"
+              echo "Successfully published $CHART_NAME version $CHART_VERSION"
+            fi
+          done
+
+      - name: Second Pass - Resolve Dependencies and Package Remaining Charts
+        shell: bash
+        run: |
+          IFS=',' read -ra CHART_DIRS <<< "${{ steps.find_charts.outputs.chart_dirs }}"
+          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
+          echo "Adding our own chart repository to use local dependencies"
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          echo "Second iteration: Publishing remaining charts with resolved dependencies"
+          for CHART_DIR in "${CHART_DIRS[@]}"; do
+            echo "Processing chart in $CHART_DIR (second pass)"
+
+            CHART_NAME=$(yq eval '.name' "$CHART_DIR/Chart.yaml")
+            CHART_VERSION=$(yq eval '.version' "$CHART_DIR/Chart.yaml")
+
+            if [ -f "${CHART_NAME}-${CHART_VERSION}.tgz" ]; then
+              echo "Skipping $CHART_NAME - already successfully packaged in first pass"
+              continue
             fi
 
-            echo "Publishing $CHART_NAME version $CHART_VERSION to GitHub Container Registry"
+            echo "Updating dependencies for $CHART_NAME"
+            helm dependency update "$CHART_DIR"
 
-            # Package and push the chart to GHCR in OCI format
+            echo "Packaging $CHART_NAME version $CHART_VERSION"
             helm package "$CHART_DIR" --version "$CHART_VERSION"
 
-            # Extract repository name from GitHub repo
-            REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-
-            # Push to GitHub Container Registry in OCI format
             helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://ghcr.io/${REPO_NAME}/charts"
-
             echo "Successfully published $CHART_NAME version $CHART_VERSION"
           done

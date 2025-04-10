@@ -34,6 +34,30 @@
             "type": [
                 "object"
             ]
+        },
+        "kubevirt": {
+            "properties": {
+                "configuration": {
+                    "properties": {
+                        "developerConfiguration": {
+                            "properties": {
+                                "featureGates": {
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "type": "array"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "type": "object"
+                },
+                "namespace": {
+                    "type": "string"
+                }
+            },
+            "type": "object"
         }
     },
     "type": "object"

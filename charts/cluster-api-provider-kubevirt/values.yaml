@@ -4,3 +4,10 @@ configSecret: # @schema description: Configuration for the secret; type: object
   namespace: "" # @schema description: Namespace of the secret; type: string
 
 config: {} # @schema description: Configuration settings; type: object; additionalProperties: true
+
+kubevirt:
+  namespace: kubevirt
+  configuration:
+    developerConfiguration:
+      featureGates:
+        - useEmulation=true
