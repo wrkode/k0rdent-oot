@@ -12,11 +12,7 @@ Based on chart version: 0.2.0
 
 ```bash
 helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 0.2.0 -n kcm-system --create-namespace \
-	--set controller.createManagement=false \
-	--set controller.createRelease=false \
 	--set controller.enableTelemetry=false
-
-kubectl -n kcm-system scale deployments/kcm-controller-manager --replicas=0
 ```
 
 ## CAPI specific guides

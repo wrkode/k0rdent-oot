@@ -17,6 +17,12 @@ clusterIdentityKinds:
 EOF
 ```
 
+## Restart `KCM` manager controller
+
+```bash
+kubectl -n kcm-system rollout restart deployment/kcm-controller-manager
+```
+
 ## Create templates for `KubeVirt` provider charts
 
 ```bash
@@ -68,35 +74,10 @@ spec:
 EOF
 ```
 
-## Rescale KCM manager
+## Add the `KubeVirt` chart into the `Management` object
 
 ```bash
-kubectl -n kcm-system patch deployment kcm-controller-manager --type='json' -p='[
-  {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": [
-    "--default-registry-url=oci://ghcr.io/k0rdent/kcm/charts",
-    "--insecure-registry=false",
-    "--create-management=true",
-    "--create-access-management=true",
-    "--create-release=true",
-    "--create-templates=true",
-    "--validate-cluster-upgrade-path=true",
-    "--enable-telemetry=false",
-    "--enable-webhook=false",
-    "--webhook-port=9443",
-    "--webhook-cert-dir=/tmp/k8s-webhook-server/serving-certs/",
-    "--zap-devel=false",
-    "--zap-time-encoding=rfc3339",
-    "--pprof-bind-address="
-  ]}
-]'
-
-kubectl -n kcm-system scale deployments/kcm-controller-manager --replicas=1
-```
-
-## Add the `KubeVirt` chart into the `Release` object
-
-```bash
-until kubectl patch release kcm-0-2-0 --type=json -p='[
+until kubectl patch management kcm --type=json -p='[
   {"op": "add", "path": "/spec/providers/-", "value": {"name": "cluster-api-provider-kubevirt", "template": "cluster-api-provider-kubevirt-0-2-0"}}
 ]'; do
   sleep 5
@@ -106,10 +87,6 @@ done
 ## Wait for `Management` object readiness
 
 ```bash
-until kubectl get management/kcm &>/dev/null; do
-  sleep 5
-done
-
 kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
 ```
 
