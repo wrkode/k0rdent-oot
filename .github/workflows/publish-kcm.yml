@@ -1,0 +1,267 @@
+name: Publish KCM Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'Repository to checkout'
+        required: true
+        type: choice
+        options:
+          - 'k0rdent-oot/kcm'
+          - 'k0rdent/kcm'
+        default: 'k0rdent-oot/kcm'
+      ref:
+        description: 'Git reference (branch, tag, commit hash)'
+        required: true
+        type: string
+      version:
+        description: 'Version to use for image and chart'
+        required: false
+        type: string
+        default: '0.2.0'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repository }}
+          ref: ${{ inputs.ref }}
+
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Set variables
+        shell: bash
+        run: |
+          GIT_COMMIT=$(git rev-parse --short HEAD)
+          VERSION="$(echo ${{ inputs.version }} | tr '[:upper:]' '[:lower:]')"
+          IMAGE_NAME="$(echo ghcr.io/${{ github.repository }}/controller | tr '[:upper:]' '[:lower:]')"
+
+          echo "GIT_COMMIT=${GIT_COMMIT}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "CHART_VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
+
+          echo "ORIGINAL_REPO=k0rdent/kcm" >> $GITHUB_ENV
+          echo "ORIGINAL_REPO_GOMOD=K0rdent/kcm" >> $GITHUB_ENV
+
+      - name: Show variables
+        shell: bash
+        run: |
+          echo "Set GIT_COMMIT to: ${{ env.GIT_COMMIT }}"
+          echo "Set VERSION to: ${{ env.VERSION }}"
+          echo "Set CHART_VERSION to: ${{ env.CHART_VERSION }}"
+          echo "Set IMAGE_NAME to: ${{ env.IMAGE_NAME }}"
+
+          echo "Set ORIGINAL_REPO to: ${{ env.ORIGINAL_REPO }}"
+          echo "Set ORIGINAL_REPO_GOMOD to: ${{ env.ORIGINAL_REPO_GOMOD }}"
+
+      - name: Replace image references in source code
+        shell: bash
+        run: |
+          # echo "Find all files that might contain the image reference"
+          find . -type f -not -path "./.git/*" -exec grep -l "ghcr.io/${{ env.ORIGINAL_REPO }}" {} \; > files_to_modify.txt
+
+          # echo "Replace all occurrences of the old image reference with the new one"
+          if [ -s files_to_modify.txt ]; then
+            while IFS= read -r file; do
+              echo "Updating references in $file"
+              sed -i "s|ghcr.io/${{ env.ORIGINAL_REPO }}|ghcr.io/${{ github.repository }}|g" "$file"
+            done < files_to_modify.txt
+          fi
+
+      - name: Prepare all charts
+        shell: bash
+        run: |
+          CHART_DIRS=$(find ./templates -name "Chart.yaml" -type f | xargs -I{} dirname {} | sort)
+          if [ -z "$CHART_DIRS" ]; then
+            exit 0
+          fi
+
+          # echo "Patching charts and preparing them for release"
+          for chart_dir in $CHART_DIRS; do
+            CHART_YAML="$chart_dir/Chart.yaml"
+            if [ ! -f "$CHART_YAML" ]; then
+              continue
+            fi
+
+            echo "Patching chart $CHART_YAML"
+            yq e '.annotations."github.com/source-repo" = "${{ inputs.repository }}"' -i "$CHART_YAML"
+            yq e '.annotations."github.com/git-commit" = env(GIT_COMMIT)' -i "$CHART_YAML"
+
+            # if [[ "$chart_dir" != *"charts/projectsveltos"* ]]; then
+            #   yq e '.version = env(CHART_VERSION)' -i "$CHART_YAML"
+            # fi
+          done
+
+      - name: Commit changes
+        shell: bash
+        run: |
+          echo "---"
+          git diff
+          echo "---"
+          git add -A && git commit -m "Update image references and chart annotations"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push KCM controller image
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          build-args: |
+            LD_FLAGS=-s -w -X github.com/${{ env.ORIGINAL_REPO_GOMOD }}/internal/build.Version=${{ env.VERSION }}
+          context: .
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+            ${{ env.IMAGE_NAME }}:latest
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ inputs.repository }}
+            org.opencontainers.image.revision=${{ env.GIT_COMMIT }}
+            org.opencontainers.image.created=${{ github.event.repository.created_at }}
+
+      # https://docs.github.com/en/rest/packages/packages?apiVersion=2022-11-28#about-github-packages
+      # gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/orgs/k0rdent-oot/packages?package_type=container" | jq -r '.[] | .name' | while read pkg; do escaped_pkg=$(echo "$pkg" | sed 's/\//%2F/g'); echo "Removing: $pkg" && gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/orgs/k0rdent-oot/packages/container/$escaped_pkg" && sleep 1; done
+      - name: Delete existing chart versions
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CHART_DIRS=$(find ./templates -name "Chart.yaml" -type f | xargs -I{} dirname {} | sort)
+          if [ -z "$CHART_DIRS" ]; then
+            exit 0
+          fi
+
+          REPO_NAME=${GITHUB_REPOSITORY#$GITHUB_REPOSITORY_OWNER/}
+
+          for chart_dir in $CHART_DIRS; do
+            CHART_YAML="$chart_dir/Chart.yaml"
+            if [ ! -f "$CHART_YAML" ]; then
+              continue
+            fi
+
+            CHART_NAME=$(yq e '.name' "$CHART_YAML")
+            CHART_VERSION="${{ env.CHART_VERSION }}"
+            PACKAGE_PATH="${REPO_NAME}%2Fcharts%2F${CHART_NAME}"
+
+            echo "Processing chart $CHART_NAME:$CHART_VERSION"
+            sleep 1
+
+            echo "Checking versions for package $PACKAGE_PATH..."
+            ORG_VERSIONS=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${PACKAGE_PATH}/versions" 2>/dev/null || echo '[]')
+
+            ORG_VERSION_COUNT=$(echo "$ORG_VERSIONS" | jq length)
+            ORG_VERSION_ID=$(echo "$ORG_VERSIONS" | \
+              jq -r --arg VERSION "$CHART_VERSION" '.[] | select(.metadata.container.tags[] | contains($VERSION)) | .id' || true)
+
+            if [ -n "$ORG_VERSION_ID" ]; then
+              echo "Found version ID: $ORG_VERSION_ID for chart ${CHART_NAME}:${CHART_VERSION} in organization endpoint"
+
+              if [ "$ORG_VERSION_COUNT" = "1" ]; then
+                echo "This is the only version - deleting entire package..."
+                if gh api --method DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${PACKAGE_PATH}"; then
+                  echo "Successfully deleted package ${CHART_NAME} from organization endpoint"
+                  continue
+                else
+                  echo "Failed to delete package from organization endpoint"
+                fi
+              else
+                if gh api --method DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${PACKAGE_PATH}/versions/${ORG_VERSION_ID}"; then
+                  echo "Successfully deleted chart ${CHART_NAME}:${CHART_VERSION} from organization endpoint"
+                  continue
+                else
+                  echo "Failed to delete version from organization endpoint"
+                fi
+              fi
+            else
+              echo "No matching version ID found in organization endpoint"
+            fi
+
+            echo "Checking versions for user package $PACKAGE_PATH..."
+            USER_VERSIONS=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/user/${GITHUB_REPOSITORY_OWNER}/packages/container/${PACKAGE_PATH}/versions" 2>/dev/null || echo '[]')
+
+            USER_VERSION_COUNT=$(echo "$USER_VERSIONS" | jq length)
+            USER_VERSION_ID=$(echo "$USER_VERSIONS" | \
+              jq -r --arg VERSION "$CHART_VERSION" '.[] | select(.metadata.container.tags[] | contains($VERSION)) | .id' || true)
+
+            if [ -n "$USER_VERSION_ID" ]; then
+              echo "Found version ID: $USER_VERSION_ID for chart ${CHART_NAME}:${CHART_VERSION} in user endpoint"
+
+              if [ "$USER_VERSION_COUNT" = "1" ]; then
+                echo "This is the only version - deleting entire package..."
+                if gh api --method DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/user/${GITHUB_REPOSITORY_OWNER}/packages/container/${PACKAGE_PATH}"; then
+                  echo "Successfully deleted package ${CHART_NAME} from user endpoint"
+                  continue
+                else
+                  echo "Failed to delete package from user endpoint"
+                fi
+              else
+                if gh api --method DELETE \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "/user/${GITHUB_REPOSITORY_OWNER}/packages/container/${PACKAGE_PATH}/versions/${USER_VERSION_ID}"; then
+                  echo "Successfully deleted chart ${CHART_NAME}:${CHART_VERSION} from user endpoint"
+                  continue
+                else
+                  echo "Failed to delete version from user endpoint"
+                fi
+              fi
+            else
+              echo "No matching version ID found in user endpoint"
+            fi
+          done
+
+      - name: Push all charts to GHCR
+        run: REGISTRY_REPO="oci://ghcr.io/${{ github.repository }}/charts" make helm-push
+
+      - name: Write installation instructions to summary
+        shell: bash
+        run: |
+          echo "## Image Digest" >> $GITHUB_STEP_SUMMARY
+          echo "Source Repository: ${{ inputs.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "Git Reference: ${{ inputs.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "Git Commit: ${{ env.GIT_COMMIT }}" >> $GITHUB_STEP_SUMMARY
+          echo "Version: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+          echo "## KCM Chart Installation" >> $GITHUB_STEP_SUMMARY
+          echo "helm install kcm oci://ghcr.io/${{ github.repository }}/charts/kcm --version ${{ env.CHART_VERSION }} -n kcm-system --create-namespace" >> $GITHUB_STEP_SUMMARY

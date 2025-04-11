@@ -1,0 +1,42 @@
+name: DESTROY ORG Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run'
+        required: true
+        default: 'true'
+        type: boolean
+
+jobs:
+  cleanup-packages:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Get list of container packages
+        id: get-packages
+        shell: bash
+        run: |
+          PACKAGES=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/orgs/${{ github.repository_owner }}/packages?package_type=container" | jq -r '.[] | .name')
+          echo "Found the following packages:"
+          echo "$PACKAGES"
+          echo "packages<<EOF" >> $GITHUB_OUTPUT
+          echo "$PACKAGES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
+
+      - name: Delete packages (if not dry run)
+        if: ${{ inputs.dry_run == false }}
+        shell: bash
+        run: |
+          echo "Starting package deletion..."
+          echo "${{ steps.get-packages.outputs.packages }}" | while read pkg; do
+            escaped_pkg=$(echo "$pkg" | sed 's/\//%2F/g')
+            echo "Removing: $pkg"
+            gh api --method DELETE -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/orgs/${{ github.repository_owner }}/packages/container/$escaped_pkg"
+            sleep 1
+          done
+        env:
+          GH_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
