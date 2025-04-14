@@ -15,14 +15,24 @@ on:
         description: 'Git reference (branch, tag, commit hash)'
         required: true
         type: string
+        default: 'oot'
       version:
         description: 'Version to use for image and chart'
         required: false
         type: string
         default: '0.2.0'
+      architectures:
+        description: 'Target architectures to build for'
+        required: true
+        type: choice
+        options:
+          - 'linux/amd64,linux/arm64'
+          - 'linux/amd64'
+          - 'linux/arm64'
+        default: 'linux/amd64'
 
 jobs:
-  release:
+  Release:
     runs-on: ubuntu-latest
 
     permissions:
@@ -132,7 +142,7 @@ jobs:
           build-args: |
             LD_FLAGS=-s -w -X github.com/${{ env.ORIGINAL_REPO_GOMOD }}/internal/build.Version=${{ env.VERSION }}
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ inputs.architectures }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
             ${{ env.IMAGE_NAME }}:latest
@@ -258,10 +268,14 @@ jobs:
         shell: bash
         run: |
           echo "## Image Digest" >> $GITHUB_STEP_SUMMARY
-          echo "Source Repository: ${{ inputs.repository }}" >> $GITHUB_STEP_SUMMARY
-          echo "Git Reference: ${{ inputs.ref }}" >> $GITHUB_STEP_SUMMARY
-          echo "Git Commit: ${{ env.GIT_COMMIT }}" >> $GITHUB_STEP_SUMMARY
-          echo "Version: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Source Repository | ${{ inputs.repository }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Git Reference | ${{ inputs.ref }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Git Commit | ${{ env.GIT_COMMIT }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ inputs.version }} |" >> $GITHUB_STEP_SUMMARY
 
           echo "## KCM Chart Installation" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           echo "helm install kcm oci://ghcr.io/${{ github.repository }}/charts/kcm --version ${{ env.CHART_VERSION }} -n kcm-system --create-namespace" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
