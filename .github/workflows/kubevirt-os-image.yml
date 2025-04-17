@@ -1,0 +1,138 @@
+name: KubeVirt OS Container Disk Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud_image:
+        description: 'Cloud image to package'
+        required: true
+        type: choice
+        options:
+          - debian
+          - ubuntu
+      disk_size:
+        description: 'Disk size in GiB (default: 10)'
+        required: false
+        default: '10'
+        type: string
+      tag:
+        description: 'Image tag'
+        default: latest
+        required: false
+
+jobs:
+  build-and-push:
+    name: Image for ${{ github.event.inputs.cloud_image }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE_NAME: 'kubevirt-container-disk'
+
+    steps:
+      - name: Install required tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libguestfs-tools \
+            libvirt-clients \
+            qemu-utils \
+            virtinst
+
+      - name: Set up variables
+        id: vars
+        shell: bash
+        run: |
+          if [ -z "${{ github.event.inputs.tag }}" ]; then
+            echo "IMAGE_TAG=${{ github.event.inputs.cloud_image }}-$(date +%Y%m%d)" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=${{ github.event.inputs.cloud_image }}-${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+          fi
+
+          case "${{ github.event.inputs.cloud_image }}" in
+            debian)
+              echo "DOWNLOAD_URL=https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2" >> $GITHUB_ENV
+              echo "ORIGINAL_DISK_IMAGE_FILENAME=debian-12-generic-amd64.qcow2" >> $GITHUB_ENV
+              ;;
+            ubuntu)
+              echo "DOWNLOAD_URL=https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img" >> $GITHUB_ENV
+              echo "ORIGINAL_DISK_IMAGE_FILENAME=ubuntu-24.04-minimal-cloudimg-amd64.img" >> $GITHUB_ENV
+              ;;
+          esac
+
+          echo "RESIZED_DISK_IMAGE_FILENAME=disk.img" >> $GITHUB_ENV
+          echo "DISK_SIZE=${{ github.event.inputs.disk_size || '10' }}" >> $GITHUB_ENV
+
+      # https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/
+      # https://libguestfs.org/guestfs-faq.1.html
+      - name: Enable KVM group perms
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          sudo usermod -a -G kvm $USER
+          sudo usermod -a -G libvirt $USER || true
+          sudo chmod 0644 /boot/vmlinuz*
+          sudo chmod -R 0777 /var/run/ /run/user/$(id -u) /tmp/
+
+      - name: Download cloud image
+        shell: bash
+        run: |
+          curl -L ${DOWNLOAD_URL} -o ${{ env.ORIGINAL_DISK_IMAGE_FILENAME }}
+
+      - name: Resize disk image
+        shell: bash
+        run: |
+          qemu-img create -f qcow2 -o preallocation=metadata ${{ env.RESIZED_DISK_IMAGE_FILENAME }} ${DISK_SIZE}G
+          virt-resize --expand /dev/sda1 ${{ env.ORIGINAL_DISK_IMAGE_FILENAME }} ${{ env.RESIZED_DISK_IMAGE_FILENAME }}
+        env:
+          LIBGUESTFS_BACKEND: direct
+          LIBGUESTFS_DEBUG: 1
+          LIBGUESTFS_TRACE: 1
+          LIBGUESTFS_DISABLE_APPLIANCE_LOCK: 1
+
+      # - name: Customize image
+      #   shell: bash
+      #   run: |
+      #     virt-customize -x -v -a ${{ env.RESIZED_DISK_IMAGE_FILENAME }} --install qemu-guest-agent --run-command "systemctl enable qemu-guest-agent" --selinux-relabel
+      #   env:
+      #     # LIBGUESTFS_BACKEND: direct
+      #     LIBGUESTFS_DEBUG: 1
+      #     LIBGUESTFS_TRACE: 1
+      #     # LIBGUESTFS_DISABLE_APPLIANCE_LOCK: 1
+
+      # https://github.com/kubevirt/kubevirt/blob/main/docs/container-register-disks.md
+      # https://github.com/kubevirt/kubevirt/blob/main/containerimages/container-disk-images.md
+      - name: Create Dockerfile
+        shell: bash
+        run: |
+          cat > Dockerfile << EOF
+          FROM kubevirt/container-disk-v1alpha
+          ADD ${{ env.RESIZED_DISK_IMAGE_FILENAME }} /disk/
+          EOF
+
+          cat Dockerfile
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          provenance: false

@@ -38,13 +38,15 @@ jobs:
         shell: bash
         run: |
           CHARTS=$(find ./charts -type f -name "Chart.yaml" | sed -e 's|/Chart.yaml||g')
-          echo "Found charts in: $CHARTS"
+          echo "Found charts in:"
+          echo "$CHARTS"
           echo "chart_dirs=$(echo $CHARTS | tr ' ' ',')" >> $GITHUB_OUTPUT
 
       - name: First Pass - Package and Push Independent Charts
         shell: bash
         run: |
-          IFS=',' read -ra CHART_DIRS <<< "${{ steps.find_charts.outputs.chart_dirs }}"
+          CHARTS=$(echo ${{ steps.find_charts.outputs.chart_dirs }} | tr ',' '\n' | shuf | tr '\n' ',')
+          IFS=',' read -ra CHART_DIRS <<< "$CHARTS"
           REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
 
           echo "First iteration: Publishing charts (some might fail due to unresolved dependencies)"
@@ -67,30 +69,66 @@ jobs:
       - name: Second Pass - Resolve Dependencies and Package Remaining Charts
         shell: bash
         run: |
-          IFS=',' read -ra CHART_DIRS <<< "${{ steps.find_charts.outputs.chart_dirs }}"
+          CHARTS=$(echo ${{ steps.find_charts.outputs.chart_dirs }} | tr ',' '\n' | shuf | tr '\n' ',')
+          IFS=',' read -ra CHART_DIRS <<< "$CHARTS"
           REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
 
           echo "Adding our own chart repository to use local dependencies"
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
 
           echo "Second iteration: Publishing remaining charts with resolved dependencies"
-          for CHART_DIR in "${CHART_DIRS[@]}"; do
-            echo "Processing chart in $CHART_DIR (second pass)"
 
-            CHART_NAME=$(yq eval '.name' "$CHART_DIR/Chart.yaml")
-            CHART_VERSION=$(yq eval '.version' "$CHART_DIR/Chart.yaml")
+          # Associative array to track processed charts
+          declare -A PROCESSED_CHARTS
+          TOTAL_CHARTS=${#CHART_DIRS[@]}
 
-            if [ -f "${CHART_NAME}-${CHART_VERSION}.tgz" ]; then
-              echo "Skipping $CHART_NAME - already successfully packaged in first pass"
-              continue
-            fi
+          ATTEMPT=1
+          MAX_ATTEMPTS=5
 
-            echo "Updating dependencies for $CHART_NAME"
-            helm dependency update "$CHART_DIR"
+          while [ ${#PROCESSED_CHARTS[@]} -lt $TOTAL_CHARTS ] && [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            echo "Processing attempt $ATTEMPT: ${#PROCESSED_CHARTS[@]}/$TOTAL_CHARTS charts processed"
 
-            echo "Packaging $CHART_NAME version $CHART_VERSION"
-            helm package "$CHART_DIR" --version "$CHART_VERSION"
+            for CHART_DIR in "${CHART_DIRS[@]}"; do
+              CHART_NAME=$(yq eval '.name' "$CHART_DIR/Chart.yaml")
+              CHART_VERSION=$(yq eval '.version' "$CHART_DIR/Chart.yaml")
+              CHART_KEY="${CHART_NAME}-${CHART_VERSION}"
 
-            helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://ghcr.io/${REPO_NAME}/charts"
-            echo "Successfully published $CHART_NAME version $CHART_VERSION"
+              if [[ -n "${PROCESSED_CHARTS[$CHART_KEY]}" ]]; then
+                continue
+              fi
+
+              if [ -f "${CHART_NAME}-${CHART_VERSION}.tgz" ]; then
+                echo "Skipping $CHART_NAME - already successfully packaged"
+                PROCESSED_CHARTS[$CHART_KEY]=1
+                continue
+              fi
+
+              echo "Processing chart in $CHART_DIR (attempt $ATTEMPT)"
+
+              echo "Updating dependencies for $CHART_NAME"
+              if ! helm dependency update "$CHART_DIR"; then
+                echo "Failed to update dependency for $CHART_NAME, will retry in next iteration"
+                continue
+              fi
+
+              echo "Packaging $CHART_NAME version $CHART_VERSION"
+              if ! helm package "$CHART_DIR" --version "$CHART_VERSION"; then
+                echo "Failed to package $CHART_NAME, will retry in next iteration"
+                continue
+              fi
+
+              helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://ghcr.io/${REPO_NAME}/charts"
+              echo "Successfully published $CHART_NAME version $CHART_VERSION"
+
+              PROCESSED_CHARTS[$CHART_KEY]=1
+            done
+
+            echo "Attempt $ATTEMPT completed: ${#PROCESSED_CHARTS[@]}/$TOTAL_CHARTS charts processed so far"
+            ATTEMPT=$((ATTEMPT + 1))
           done
+
+          echo "Final summary: ${#PROCESSED_CHARTS[@]}/$TOTAL_CHARTS charts processed"
+          if [ ${#PROCESSED_CHARTS[@]} -lt $TOTAL_CHARTS ]; then
+            echo "Failed to process all charts after $MAX_ATTEMPTS attempts"
+            exit 1
+          fi

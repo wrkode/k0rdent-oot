@@ -54,14 +54,6 @@
         "clusterNetwork": {
             "description": "The cluster network configuration",
             "properties": {
-                "apiServerPort": {
-                    "description": "The port the API Server should bind to",
-                    "maximum": 65535,
-                    "minimum": 1,
-                    "type": [
-                        "number"
-                    ]
-                },
                 "pods": {
                     "description": "The network ranges from which Pod networks are allocated",
                     "properties": {
@@ -140,26 +132,6 @@
                     },
                     "type": [
                         "array"
-                    ]
-                },
-                "ssh": {
-                    "description": "SSH access configuration for worker nodes",
-                    "properties": {
-                        "publicKey": {
-                            "description": "SSH public key for access to worker nodes",
-                            "type": [
-                                "string"
-                            ]
-                        },
-                        "user": {
-                            "description": "SSH username for access to worker nodes",
-                            "type": [
-                                "string"
-                            ]
-                        }
-                    },
-                    "type": [
-                        "object"
                     ]
                 }
             },
@@ -287,26 +259,6 @@
                     },
                     "type": [
                         "array"
-                    ]
-                },
-                "ssh": {
-                    "description": "SSH access configuration for worker nodes",
-                    "properties": {
-                        "publicKey": {
-                            "description": "SSH public key for access to worker nodes",
-                            "type": [
-                                "string"
-                            ]
-                        },
-                        "user": {
-                            "description": "SSH username for access to worker nodes",
-                            "type": [
-                                "string"
-                            ]
-                        }
-                    },
-                    "type": [
-                        "object"
                     ]
                 }
             },

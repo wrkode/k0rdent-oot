@@ -11,7 +11,7 @@ helm pull oci://ghcr.io/k0rdent/kcm/charts/cluster-api-provider-openstack --vers
 helm pull oci://ghcr.io/k0rdent/kcm/charts/openstack-standalone-cp --version 0.2.0 --untar --untardir ./TEMP/.
 
 helm pull oci://ghcr.io/k0rdent-oot/oot/charts/cluster-api-provider-kubevirt --version 0.2.1 --untar --untardir ./TEMP/.
-helm pull oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-standalone-cp --version 0.2.0 --untar --untardir ./TEMP/.
+helm pull oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-standalone-cp --version 0.2.1 --untar --untardir ./TEMP/.
 
 helm pull oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt --version 0.1.0 --untar --untardir ./TEMP/.
 ```
@@ -25,7 +25,7 @@ helm template test oci://ghcr.io/k0rdent/kcm/charts/cluster-api-provider-opensta
 helm template test oci://ghcr.io/k0rdent/kcm/charts/openstack-standalone-cp --version 0.2.0 -n kcm-system --output-dir ./TEMP/.
 
 helm template test oci://ghcr.io/k0rdent-oot/oot/charts/cluster-api-provider-kubevirt --version 0.2.1 -n kcm-system --output-dir ./TEMP/.
-helm template test oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-standalone-cp --version 0.2.0 -n kcm-system --output-dir ./TEMP/.
+helm template test oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-standalone-cp --version 0.2.1 -n kcm-system --output-dir ./TEMP/.
 
 helm template test oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt --version 0.1.0 -n kcm-system --output-dir ./TEMP/.
 helm template test oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt --version 0.1.0 \

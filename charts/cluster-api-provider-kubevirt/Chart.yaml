@@ -9,5 +9,5 @@ annotations:
   cluster.x-k8s.io/v1beta1: v1beta1
 dependencies:
   - name: kubevirt
-    version: 0.1.0
-    repository: oci://ghcr.io/k0rdent-oot/oot/charts
+    version: ">=0.1.0"
+    repository: "oci://ghcr.io/k0rdent-oot/oot/charts"

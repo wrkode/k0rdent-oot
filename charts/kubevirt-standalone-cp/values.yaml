@@ -13,7 +13,6 @@ cluster: # @schema description: Basic cluster information; type: object
   namespace: "default" # @schema description: The namespace where cluster resources will be created; type: string
 
 clusterNetwork: # @schema description: The cluster network configuration; type: object
-  apiServerPort: 6443 # @schema description: The port the API Server should bind to; type: number; minimum: 1; maximum: 65535
   pods: # @schema description: The network ranges from which Pod networks are allocated; type: object
     cidrBlocks: # @schema description: A list of CIDR blocks; type: array; items: string
       - "10.243.0.0/16"
@@ -26,26 +25,20 @@ clusterAnnotations: {} # @schema description: Annotations to apply to the cluste
 
 # KubeVirt machines parameters
 controlPlane: # @schema description: Control plane parameters; type: object
-  ssh: # @schema description: SSH access configuration for worker nodes; type: object
-    user: "debian" # @schema description: SSH username for access to worker nodes; type: string
-    publicKey: "" # @schema description: SSH public key for access to worker nodes; type: string
   cpus: 2 # @schema description: Number of CPUs allocated to control plane nodes; type: integer; minimum: 1
   memory: "4Gi" # @schema description: Memory allocated to control plane nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
-  image: quay.io/containerdisks/debian:12 # @schema description: Container disk image for control plane nodes; type: string
+  image: ghcr.io/k0rdent-oot/kubevirt-container-disk:debian-latest # @schema description: Container disk image for control plane nodes; type: string
   preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; items: string
     - apt update
     - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
     - systemctl enable --now qemu-guest-agent
 
 worker: # @schema description: Worker parameters; type: object
-  ssh: # @schema description: SSH access configuration for worker nodes; type: object
-    user: "debian" # @schema description: SSH username for access to worker nodes; type: string
-    publicKey: "" # @schema description: SSH public key for access to worker nodes; type: string
   cpus: 2 # @schema description: Number of CPUs allocated to worker nodes; type: integer; minimum: 1
   memory: "4Gi" # @schema description: Memory allocated to worker nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
-  image: quay.io/containerdisks/debian:12 # @schema description: Container disk image for worker nodes; type: string
+  image: ghcr.io/k0rdent-oot/kubevirt-container-disk:debian-latest # @schema description: Container disk image for worker nodes; type: string
   preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; items: string
     - apt update
     - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
@@ -53,7 +46,7 @@ worker: # @schema description: Worker parameters; type: object
 
 # K0s parameters
 k0s: # @schema description: K0s parameters; type: object
-  version: v1.31.6+k0s.0 # @schema description: K0s version; type: string
+  version: v1.31.7+k0s.0 # @schema description: K0s version; type: string
   api: # @schema description: Kubernetes API server parameters; type: object; additionalProperties: object
     extraArgs: {} # @schema description: Map of key-values (strings) for any extra arguments to pass down to Kubernetes api-server process; type: object; additionalProperties: true
   network: # @schema description: Network configuration for K0s; type: object
