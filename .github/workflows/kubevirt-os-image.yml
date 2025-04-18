@@ -21,37 +21,61 @@ on:
         required: false
 
 jobs:
-  build-and-push:
-    name: Image for ${{ github.event.inputs.cloud_image }}
+  build-disk-image:
+    name: Build ${{ github.event.inputs.cloud_image }} disk image
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      packages: write
+    container:
+      image: debian
+      options: --privileged
 
-    env:
-      IMAGE_NAME: 'kubevirt-container-disk'
+    outputs:
+      name: ${{ steps.vars.outputs.name }}
+      tag: ${{ steps.vars.outputs.tag }}
+      filename: ${{ steps.vars.outputs.filename }}
 
     steps:
       - name: Install required tools
         shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          apt-get update
+          apt-get install -y \
+            gzip \
             libguestfs-tools \
             libvirt-clients \
             qemu-utils \
+            sudo \
             virtinst
+
+      # https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/
+      # https://libguestfs.org/guestfs-faq.1.html
+      # - name: Enable KVM group perms
+      #   shell: bash
+      #   run: |
+      #     echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+      #     sudo udevadm control --reload-rules
+      #     sudo udevadm trigger --name-match=kvm
+      #     sudo usermod -a -G kvm $USER
+      #     sudo usermod -a -G libvirt $USER || true
+      #     sudo chmod 0644 /boot/vmlinuz*
+      #     sudo chmod -R 0777 /var/run/ /run/user/$(id -u) /tmp/
 
       - name: Set up variables
         id: vars
         shell: bash
         run: |
+          IMAGE_NAME="kubevirt-container-disk"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
+
           if [ -z "${{ github.event.inputs.tag }}" ]; then
-            echo "IMAGE_TAG=${{ github.event.inputs.cloud_image }}-$(date +%Y%m%d)" >> $GITHUB_ENV
+            IMAGE_TAG="${{ github.event.inputs.cloud_image }}-$(date +%Y%m%d)"
           else
-            echo "IMAGE_TAG=${{ github.event.inputs.cloud_image }}-${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+            IMAGE_TAG="${{ github.event.inputs.cloud_image }}-${{ github.event.inputs.tag }}"
           fi
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+          echo "name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
 
           case "${{ github.event.inputs.cloud_image }}" in
             debian)
@@ -65,20 +89,8 @@ jobs:
           esac
 
           echo "RESIZED_DISK_IMAGE_FILENAME=disk.img" >> $GITHUB_ENV
+          echo "filename=disk.img" >> $GITHUB_OUTPUT
           echo "DISK_SIZE=${{ github.event.inputs.disk_size || '10' }}" >> $GITHUB_ENV
-
-      # https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/
-      # https://libguestfs.org/guestfs-faq.1.html
-      - name: Enable KVM group perms
-        shell: bash
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          sudo usermod -a -G kvm $USER
-          sudo usermod -a -G libvirt $USER || true
-          sudo chmod 0644 /boot/vmlinuz*
-          sudo chmod -R 0777 /var/run/ /run/user/$(id -u) /tmp/
 
       - name: Download cloud image
         shell: bash
@@ -96,15 +108,55 @@ jobs:
           LIBGUESTFS_TRACE: 1
           LIBGUESTFS_DISABLE_APPLIANCE_LOCK: 1
 
-      # - name: Customize image
-      #   shell: bash
-      #   run: |
-      #     virt-customize -x -v -a ${{ env.RESIZED_DISK_IMAGE_FILENAME }} --install qemu-guest-agent --run-command "systemctl enable qemu-guest-agent" --selinux-relabel
-      #   env:
-      #     # LIBGUESTFS_BACKEND: direct
-      #     LIBGUESTFS_DEBUG: 1
-      #     LIBGUESTFS_TRACE: 1
-      #     # LIBGUESTFS_DISABLE_APPLIANCE_LOCK: 1
+      - name: Customize image
+        shell: bash
+        run: |
+          virt-customize -x -v -a ${{ env.RESIZED_DISK_IMAGE_FILENAME }} \
+            --install qemu-guest-agent \
+            --run-command "systemctl enable qemu-guest-agent" \
+            --selinux-relabel
+        env:
+          LIBGUESTFS_BACKEND: direct
+          LIBGUESTFS_DEBUG: 1
+          LIBGUESTFS_TRACE: 1
+          LIBGUESTFS_DISABLE_APPLIANCE_LOCK: 1
+
+      - name: Sparsify image
+        shell: bash
+        run: |
+          SPARSE_OUTPUT="${{ env.RESIZED_DISK_IMAGE_FILENAME }}.sparse"
+          virt-sparsify --compress ${{ env.RESIZED_DISK_IMAGE_FILENAME }} "$SPARSE_OUTPUT"
+          mv -fv "$SPARSE_OUTPUT" ${{ env.RESIZED_DISK_IMAGE_FILENAME }}
+        env:
+          LIBGUESTFS_BACKEND: direct
+          LIBGUESTFS_DEBUG: 1
+          LIBGUESTFS_TRACE: 1
+
+      - name: Upload disk image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IMAGE_NAME }}-${{ env.IMAGE_TAG }}
+          path: ${{ env.RESIZED_DISK_IMAGE_FILENAME }}
+          retention-days: 1
+          compression-level: 9
+          if-no-files-found: error
+          overwrite: true
+
+  package-and-push:
+    name: Package and push ${{ github.event.inputs.cloud_image }} image
+    runs-on: ubuntu-latest
+    needs: build-disk-image
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Download disk image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-disk-image.outputs.name }}-${{ needs.build-disk-image.outputs.tag }}
+          path: ./
 
       # https://github.com/kubevirt/kubevirt/blob/main/docs/container-register-disks.md
       # https://github.com/kubevirt/kubevirt/blob/main/containerimages/container-disk-images.md
@@ -112,10 +164,9 @@ jobs:
         shell: bash
         run: |
           cat > Dockerfile << EOF
-          FROM kubevirt/container-disk-v1alpha
-          ADD ${{ env.RESIZED_DISK_IMAGE_FILENAME }} /disk/
+          FROM docker.io/kubevirt/container-disk-v1alpha
+          ADD ${{ needs.build-disk-image.outputs.filename }} /disk/
           EOF
-
           cat Dockerfile
 
       - name: Setup Docker Buildx
@@ -134,5 +185,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/${{ needs.build-disk-image.outputs.name }}:${{ needs.build-disk-image.outputs.tag }}
           provenance: false
