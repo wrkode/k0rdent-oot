@@ -9,3 +9,4 @@ Based on chart version: 0.2.0
 ## CAPI specific guides
 
 - [KubeVirt](/KUBEVIRT.md)
+- [Hetzner](/HETZNER.md)
