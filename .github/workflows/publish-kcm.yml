@@ -20,7 +20,7 @@ on:
         description: 'Version to use for image and chart'
         required: false
         type: string
-        default: '0.2.0'
+        default: '0.3.0'
       architectures:
         description: 'Target architectures to build for'
         required: true

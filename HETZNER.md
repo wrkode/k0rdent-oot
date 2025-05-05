@@ -3,7 +3,7 @@
 ## Install `k0rdent/kcm` into Kubernetes cluster
 
 ```bash
-helm install kcm oci://ghcr.io/k0rdent-oot/oot/charts/kcm --version 0.2.0 -n kcm-system --create-namespace \
+helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 0.3.0 -n kcm-system --create-namespace \
   --set controller.enableTelemetry=false \
   --set velero.enabled=false
 ```
@@ -33,7 +33,7 @@ kubectl patch mgmt kcm \
       "path": "/spec/providers/-",
       "value": {
         "name": "cluster-api-provider-hetzner",
-        "template": "cluster-api-provider-hetzner-0-2-1",
+        "template": "cluster-api-provider-hetzner-0-3-0",
       }
     }
   ]'
@@ -92,7 +92,7 @@ metadata:
   name: hetzner-demo
   namespace: kcm-system
 spec:
-  template: hetzner-standalone-cp-0-2-1
+  template: hetzner-standalone-cp-0-3-0
   credential: hetzner-cluster-identity-cred
   config:
     region: fsn1

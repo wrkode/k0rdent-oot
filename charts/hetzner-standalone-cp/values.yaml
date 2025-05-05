@@ -32,6 +32,6 @@ worker: # @schema description: Worker parameters; type: object
 
 # K0s parameters
 k0s: # @schema description: K0s parameters; type: object
-  version: v1.31.7+k0s.0 # @schema description: K0s version; type: string
+  version: v1.31.8+k0s.0 # @schema description: K0s version; type: string
   telemetry: # @schema description: Telemetry configuration; type: object
     enabled: false # @schema description: Whether to enable telemetry; type: boolean

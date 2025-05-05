@@ -7,8 +7,9 @@
 > Note: if using `cilium` [without `kube-proxy`](https://github.com/cilium/cilium/blob/main/Documentation/network/kubernetes/kubeproxy-free.rst), run `cilium config set bpf-lb-sock-hostns-only true`, or use [Helm chart](https://github.com/cilium/cilium/blob/main/Documentation/network/kubernetes/kubeproxy-free.rst#socket-loadbalancer-bypass-in-pod-namespace) option
 
 ```bash
-helm install kcm oci://ghcr.io/k0rdent-oot/oot/charts/kcm --version 0.2.0 -n kcm-system --create-namespace \
-  --set controller.enableTelemetry=false
+helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 0.3.0 -n kcm-system --create-namespace \
+  --set controller.enableTelemetry=false \
+  --set velero.enabled=false
 ```
 
 ## Wait for `Management` object readiness
@@ -36,7 +37,7 @@ kubectl patch mgmt kcm \
       "path": "/spec/providers/-",
       "value": {
         "name": "cluster-api-provider-kubevirt",
-        "template": "cluster-api-provider-kubevirt-0-2-1",
+        "template": "cluster-api-provider-kubevirt-0-3-0",
       }
     }
   ]'
@@ -105,7 +106,7 @@ metadata:
   name: kubevirt-demo
   namespace: kcm-system
 spec:
-  template: kubevirt-standalone-cp-0-2-1
+  template: kubevirt-standalone-cp-0-3-0
   credential: kubevirt-cluster-identity-cred
   config:
     controlPlaneNumber: 1
