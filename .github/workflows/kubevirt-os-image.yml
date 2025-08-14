@@ -4,19 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       cloud_image:
-        description: 'Cloud image to package'
+        description: "Cloud image to package"
         required: true
         type: choice
         options:
           - debian
           - ubuntu
       disk_size:
-        description: 'Disk size in GiB (default: 10)'
+        description: "Disk size in GiB (default: 10)"
         required: false
-        default: '10'
+        default: "10"
         type: string
       tag:
-        description: 'Image tag'
+        description: "Image tag"
         default: latest
         required: false
 
@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: debian
+      image: debian:13
       options: --privileged
 
     outputs:
@@ -79,8 +79,8 @@ jobs:
 
           case "${{ github.event.inputs.cloud_image }}" in
             debian)
-              echo "DOWNLOAD_URL=https://cdimage.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2" >> $GITHUB_ENV
-              echo "ORIGINAL_DISK_IMAGE_FILENAME=debian-12-generic-amd64.qcow2" >> $GITHUB_ENV
+              echo "DOWNLOAD_URL=https://cdimage.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2" >> $GITHUB_ENV
+              echo "ORIGINAL_DISK_IMAGE_FILENAME=debian-13-generic-amd64.qcow2" >> $GITHUB_ENV
               ;;
             ubuntu)
               echo "DOWNLOAD_URL=https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img" >> $GITHUB_ENV
@@ -88,8 +88,8 @@ jobs:
               ;;
           esac
 
-          echo "RESIZED_DISK_IMAGE_FILENAME=disk.img" >> $GITHUB_ENV
-          echo "filename=disk.img" >> $GITHUB_OUTPUT
+          echo "RESIZED_DISK_IMAGE_FILENAME=os.qcow2" >> $GITHUB_ENV
+          echo "filename=os.qcow2" >> $GITHUB_OUTPUT
           echo "DISK_SIZE=${{ github.event.inputs.disk_size || '10' }}" >> $GITHUB_ENV
 
       - name: Download cloud image
@@ -159,13 +159,12 @@ jobs:
           path: ./
 
       # https://github.com/kubevirt/kubevirt/blob/main/docs/container-register-disks.md
-      # https://github.com/kubevirt/kubevirt/blob/main/containerimages/container-disk-images.md
       - name: Create Dockerfile
         shell: bash
         run: |
           cat > Dockerfile << EOF
-          FROM docker.io/kubevirt/container-disk-v1alpha
-          ADD ${{ needs.build-disk-image.outputs.filename }} /disk/
+          FROM scratch
+          ADD --chown=107:107 ${{ needs.build-disk-image.outputs.filename }} /disk/
           EOF
           cat Dockerfile
 
