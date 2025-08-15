@@ -122,6 +122,20 @@ spec:
                 csiLivenessProbe:
                   repo: {{ $global.registry }}/sig-storage
               {{- end }}
+            {{- if .Values.cloudControllerManager.helmChart.enabled }}
+            - name: kubevirt-cloud-controller-manager
+              chartname: oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-cloud-controller-manager
+              version: 1.2.2
+              order: 3
+              namespace: kube-system
+              values: |
+                replicas: {{ .Values.cloudControllerManager.replicas }}
+                repo: {{ .Values.cloudControllerManager.repo }}
+                name: {{ .Values.cloudControllerManager.name }}
+                tag: {{ .Values.cloudControllerManager.tag }}
+                topologySpreadConstraints:
+                {{- toYaml .Values.cloudControllerManager.topologySpreadConstraints | nindent 18 }}
+            {{- end }}
   machineTemplate:
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1

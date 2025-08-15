@@ -174,10 +174,12 @@ k0s: # @schema description: K0s parameters; type: object
     vxlanPort: 6789 # @schema description: Port to use for VXLAN tunnels; type: number; minimum: 1; maximum: 65535
 
 cloudControllerManager:
+  helmChart:
+    enabled: true # @schema description: Enable kubevirt-cloud-controller-manager helm chart in k0s; type: boolean
   replicas: 1
   repo: quay.io/kubevirt
   name: kubevirt-cloud-controller-manager
-  tag: v0.5.1
+  tag: main
   topologySpreadConstraints:
     - labelSelector:
         matchLabels:
