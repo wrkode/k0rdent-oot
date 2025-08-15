@@ -44,7 +44,7 @@ spec:
                       name: cloudinitdisk
                   {{- end }}
                   {{- end }}
-                  networkInterfaceMultiqueue: true
+                  networkInterfaceMultiqueue: {{ .Values.controlPlane.networkInterfaceMultiqueue }}
                 memory:
                   guest: {{ .Values.controlPlane.memory }}
               evictionStrategy: External

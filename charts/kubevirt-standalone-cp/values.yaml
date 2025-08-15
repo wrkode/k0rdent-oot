@@ -64,6 +64,9 @@ controlPlane: # @schema description: Control plane parameters; type: object
     - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
     - systemctl enable --now qemu-guest-agent
 
+  # Network configuration
+  networkInterfaceMultiqueue: true # @schema description: Enable network interface multiqueue; type: boolean
+
   # Cloud-init configuration
   cloudInit: # @schema description: Cloud-init configuration; type: object
     userData: "" # @schema description: Cloud-init user data; type: string
@@ -106,6 +109,9 @@ worker: # @schema description: Worker parameters; type: object
 
   # Node selector
   nodeSelector: {} # @schema description: Node selector for VM placement; type: object; additionalProperties: true
+
+  # Network configuration
+  networkInterfaceMultiqueue: true # @schema description: Enable network interface multiqueue; type: boolean
 
   # Cloud-init configuration
   cloudInit: # @schema description: Cloud-init configuration; type: object

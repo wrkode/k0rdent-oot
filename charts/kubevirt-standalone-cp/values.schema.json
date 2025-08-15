@@ -155,6 +155,10 @@
                     "description": "Memory allocated to control plane nodes",
                     "type": "string"
                 },
+                "networkInterfaceMultiqueue": {
+                    "description": "Enable network interface multiqueue",
+                    "type": "boolean"
+                },
                 "preStartCommands": {
                     "description": "Commands to run before starting K0s service",
                     "type": "array",
@@ -485,6 +489,10 @@
                             "type": "string"
                         }
                     }
+                },
+                "networkInterfaceMultiqueue": {
+                    "description": "Enable network interface multiqueue",
+                    "type": "boolean"
                 },
                 "nodeSelector": {
                     "description": "Node selector for VM placement",

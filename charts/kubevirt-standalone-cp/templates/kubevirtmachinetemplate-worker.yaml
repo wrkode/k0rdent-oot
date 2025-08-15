@@ -83,7 +83,7 @@ spec:
                   hostDevices:
                     {{- toYaml . | nindent 20 }}
                   {{- end }}
-                  networkInterfaceMultiqueue: true
+                  networkInterfaceMultiqueue: {{ .Values.worker.networkInterfaceMultiqueue }}
                 {{- if or .Values.worker.memoryConfig.hugepages .Values.worker.memoryConfig.guest }}
                 memory:
                   {{- if .Values.worker.memoryConfig.guest }}
