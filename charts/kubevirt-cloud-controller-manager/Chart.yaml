@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kubevirt-cloud-controller-manager
+description: |
+  Helm chart for deploying KubeVirt Cloud Controller Manager.
+type: application
+version: 1.2.2
+appVersion: "v0.5.1"
