@@ -64,6 +64,10 @@ controlPlane: # @schema description: Control plane parameters; type: object
     - env DEBIAN_FRONTEND=noninteractive apt -y install qemu-guest-agent
     - systemctl enable --now qemu-guest-agent
 
+  # Cloud-init configuration
+  cloudInit: # @schema description: Cloud-init configuration; type: object
+    userData: "" # @schema description: Cloud-init user data; type: string
+
 worker: # @schema description: Worker parameters; type: object
   runStrategy: Once
   cpus: 2 # @schema description: Number of CPUs allocated to worker nodes; type: integer; minimum: 1

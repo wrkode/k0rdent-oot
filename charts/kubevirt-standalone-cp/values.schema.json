@@ -126,6 +126,16 @@
                         "ssh"
                     ]
                 },
+                "cloudInit": {
+                    "description": "Cloud-init configuration",
+                    "type": "object",
+                    "properties": {
+                        "userData": {
+                            "description": "Cloud-init user data",
+                            "type": "string"
+                        }
+                    }
+                },
                 "cpus": {
                     "description": "Number of CPUs allocated to control plane nodes",
                     "type": "integer",

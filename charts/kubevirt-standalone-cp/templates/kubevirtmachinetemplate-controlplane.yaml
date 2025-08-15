@@ -38,6 +38,11 @@ spec:
                     - disk:
                         bus: virtio
                       name: containervolume
+                  {{- if .Values.controlPlane.cloudInit.userData }}
+                    - disk:
+                        bus: virtio
+                      name: cloudinitdisk
+                  {{- end }}
                   {{- end }}
                   networkInterfaceMultiqueue: true
                 memory:
@@ -60,6 +65,11 @@ spec:
                 - name: containervolume
                   containerDisk:
                     image: {{ .Values.controlPlane.image }}
+                {{- if .Values.controlPlane.cloudInit.userData }}
+                - name: cloudinitdisk
+                  cloudInitNoCloud:
+                    userData: {{ .Values.controlPlane.cloudInit.userData | quote }}
+                {{- end }}
                 {{- end }}
           {{- if .Values.controlPlane.dataVolumes }}
           dataVolumeTemplates:
