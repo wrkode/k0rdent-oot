@@ -17,3 +17,31 @@ kubevirt:
 
   ## Workload update strategy
   workloadUpdateStrategy: {}
+
+  ## Virt-operator deployment configuration
+  virtOperator:
+    replicas: 2
+    strategy:
+      type: RollingUpdate
+    image:
+      repository: quay.io/kubevirt/virt-operator
+      tag: v1.6.0
+      pullPolicy: IfNotPresent
+    args:
+      port: "8443"
+      verbosity: "2"
+    env:
+      - name: VIRT_OPERATOR_IMAGE
+        value: quay.io/kubevirt/virt-operator:v1.6.0
+      - name: WATCH_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.annotations['olm.targetNamespaces']
+      - name: KUBEVIRT_VERSION
+        value: v1.6.0
+    annotations:
+      openshift.io/required-scc: restricted-v2
+    resources:
+      requests:
+        cpu: 10m
+        memory: 450Mi

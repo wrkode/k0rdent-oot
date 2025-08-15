@@ -26,6 +26,65 @@ kubectl wait --for=condition=Ready=True management/kcm --timeout=300s
 helm install kubevirt-pp oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-pp -n kcm-system --take-ownership
 ```
 
+## Custom KubeVirt Installation with Overrides
+
+If you need to install KubeVirt with custom configuration overrides, you should install `kubevirt-pp` without the bundled KubeVirt and then install the KubeVirt chart separately.
+
+### Install kubevirt-pp without KubeVirt
+
+```bash
+helm install kubevirt-pp oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-pp -n kcm-system --take-ownership \
+  --set kubevirt.enabled=false
+```
+
+### Install KubeVirt chart separately with custom overrides
+
+#### Using command line overrides
+
+```bash
+helm install kubevirt oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt -n kubevirt --take-ownership --create-namespace \
+  --set-string spec.configuration.developerConfiguration.useEmulation=true \
+  --set spec.configuration.developerConfiguration.cpuRequest=10m \
+  --set spec.configuration.developerConfiguration.memoryOvercommit=150
+```
+
+#### Using values file for complex overrides
+
+```bash
+# Create values override file
+cat > kubevirt-values.yaml << EOF
+kubevirt:
+  virtOperator:
+    replicas: 1
+    env:
+      - name: VIRT_OPERATOR_IMAGE
+        value: quay.io/kubevirt/virt-operator:v1.6.0
+      - name: WATCH_NAMESPACE
+        valueFrom:
+          fieldRef:
+            apiVersion: v1
+            fieldPath: metadata.annotations['olm.targetNamespaces']
+      - name: KUBEVIRT_VERSION
+        value: v1.6.0
+      - name: KV_IO_EXTRA_ENV_LAUNCHER_QEMU_TIMEOUT
+        value: "9000"
+      - name: VIRT_CONTROLLER_IMAGE
+        value: ghcr.io/s3rj1k/virt-controller:latest
+      - name: VIRT_LAUNCHER_IMAGE
+        value: ghcr.io/s3rj1k/virt-launcher:latest
+      - name: VIRT_HANDLER_IMAGE
+        value: ghcr.io/s3rj1k/virt-handler:latest
+      - name: KV_IO_EXTRA_ENV_GOTRACEBACK
+        value: all
+EOF
+
+# Install with custom values
+helm install kubevirt oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt -n kubevirt --take-ownership --create-namespace \
+  -f kubevirt-values.yaml
+```
+
+> Note: Replace the values with your specific configuration requirements. Refer to the KubeVirt documentation for available configuration options.
+
 ## Update `Management` object to enable `KubeVirt` provider
 
 ```bash
