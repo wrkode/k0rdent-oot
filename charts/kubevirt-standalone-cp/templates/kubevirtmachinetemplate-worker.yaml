@@ -57,7 +57,19 @@ spec:
                   {{- end }}
                   interfaces:
                   - name: default
+                    {{- if eq .Values.worker.defaultNetworkInterface.type "bridge" }}
                     bridge: {}
+                    {{- else if eq .Values.worker.defaultNetworkInterface.type "masquerade" }}
+                    masquerade: {}
+                    {{- if .Values.worker.defaultNetworkInterface.ports }}
+                    ports:
+                      {{- toYaml .Values.worker.defaultNetworkInterface.ports | nindent 22 }}
+                    {{- end }}
+                    {{- else if eq .Values.worker.defaultNetworkInterface.type "sriov" }}
+                    sriov: {}
+                    {{- else }}
+                    bridge: {}
+                    {{- end }}
                   {{- range .Values.worker.additionalNetworkInterfaces }}
                   - name: {{ .name }}
                     bridge: {}

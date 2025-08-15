@@ -22,7 +22,19 @@ spec:
                 devices:
                   interfaces:
                   - name: default
+                    {{- if eq .Values.controlPlane.defaultNetworkInterface.type "bridge" }}
                     bridge: {}
+                    {{- else if eq .Values.controlPlane.defaultNetworkInterface.type "masquerade" }}
+                    masquerade: {}
+                    {{- if .Values.controlPlane.defaultNetworkInterface.ports }}
+                    ports:
+                      {{- toYaml .Values.controlPlane.defaultNetworkInterface.ports | nindent 22 }}
+                    {{- end }}
+                    {{- else if eq .Values.controlPlane.defaultNetworkInterface.type "sriov" }}
+                    sriov: {}
+                    {{- else }}
+                    bridge: {}
+                    {{- end }}
                   {{- range .Values.controlPlane.additionalNetworkInterfaces }}
                   - name: {{ .name }}
                     bridge: {}

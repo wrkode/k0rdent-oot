@@ -31,6 +31,14 @@ controlPlane: # @schema description: Control plane parameters; type: object
   memory: "4Gi" # @schema description: Memory allocated to control plane nodes; type: string
   bootstrapCheckStrategy: none # @schema description: Strategy for bootstrap checks; type: string; enum: [none, ssh]
   image: ghcr.io/k0rdent-oot/kubevirt-container-disk:debian-latest # @schema description: Container disk image for control plane nodes; type: string
+
+  # Network interface configuration
+  defaultNetworkInterface: # @schema description: Default network interface configuration; type: object
+    type: bridge # @schema description: Interface type (bridge, masquerade, sriov); type: string; enum: [bridge, masquerade, sriov]
+    # ports: [] # @schema description: Port forwarding for masquerade type; type: array
+    #   - port: 80
+    #     protocol: TCP
+
   additionalNetworkInterfaces: []
   #  - name: bridge-net
   #    multus:
@@ -112,6 +120,13 @@ worker: # @schema description: Worker parameters; type: object
 
   # Network configuration
   networkInterfaceMultiqueue: true # @schema description: Enable network interface multiqueue; type: boolean
+
+  # Network interface configuration
+  defaultNetworkInterface: # @schema description: Default network interface configuration; type: object
+    type: bridge # @schema description: Interface type (bridge, masquerade, sriov); type: string; enum: [bridge, masquerade, sriov]
+    # ports: [] # @schema description: Port forwarding for masquerade type; type: array
+    #   - port: 80
+    #     protocol: TCP
 
   # Cloud-init configuration
   cloudInit: # @schema description: Cloud-init configuration; type: object

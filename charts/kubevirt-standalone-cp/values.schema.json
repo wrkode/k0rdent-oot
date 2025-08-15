@@ -144,6 +144,21 @@
                 "dataVolumes": {
                     "type": "array"
                 },
+                "defaultNetworkInterface": {
+                    "description": "Default network interface configuration",
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "description": "Interface type (bridge, masquerade, sriov)",
+                            "type": "string",
+                            "enum": [
+                                "bridge",
+                                "masquerade",
+                                "sriov"
+                            ]
+                        }
+                    }
+                },
                 "files": {
                     "type": "array"
                 },
@@ -424,6 +439,21 @@
                 },
                 "dataVolumes": {
                     "type": "array"
+                },
+                "defaultNetworkInterface": {
+                    "description": "Default network interface configuration",
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "description": "Interface type (bridge, masquerade, sriov)",
+                            "type": "string",
+                            "enum": [
+                                "bridge",
+                                "masquerade",
+                                "sriov"
+                            ]
+                        }
+                    }
                 },
                 "devices": {
                     "description": "Device configuration",
