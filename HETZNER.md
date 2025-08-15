@@ -90,7 +90,7 @@ spec:
     workerImageName: "ubuntu-24.04"
     workerServerType: "cpx21"
     workerNumber: 1
-    k0sVersion: "v1.31.10+k0s.0"
+    k0sVersion: "v1.33.3+k0s.0"
     sshKeyName: "id_ed25519"
     objects:
       - |
