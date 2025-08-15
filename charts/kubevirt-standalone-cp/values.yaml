@@ -205,3 +205,6 @@ kubevirtCsiDriver:
 machineHealthCheck:
   enabled: false
   maxUnhealthy: 40%
+
+# Generic objects creation
+objects: [] # @schema description: List of generic Kubernetes objects to create; type: array

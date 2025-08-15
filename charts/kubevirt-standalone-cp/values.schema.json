@@ -346,6 +346,10 @@
                 }
             }
         },
+        "objects": {
+            "description": "List of generic Kubernetes objects to create",
+            "type": "array"
+        },
         "worker": {
             "description": "Worker parameters",
             "type": "object",
