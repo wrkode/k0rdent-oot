@@ -87,6 +87,7 @@ spec:
         extensions:
           helm:
             charts:
+            {{- if .Values.helmCharts.kubernetesCSIExternalSnapshotter.enabled }}
             - name: kubernetes-csi-external-snapshotter
               {{- if $global.registry }}
               chartname: oci://{{ $global.registry }}/k0rdent-oot/oot/charts/kubernetes-csi-external-snapshotter
@@ -101,6 +102,8 @@ spec:
                 image:
                   repository: {{ $global.registry }}/sig-storage/snapshot-controller
               {{- end }}
+            {{- end }}
+            {{- if .Values.helmCharts.kubevirtCSIDriverTenant.enabled }}
             - name: kubevirt-csi-driver-tenant
               {{- if $global.registry }}
               chartname: oci://{{ $global.registry }}/k0rdent-oot/oot/charts/kubevirt-csi-driver-tenant
@@ -122,7 +125,8 @@ spec:
                 csiLivenessProbe:
                   repo: {{ $global.registry }}/sig-storage
               {{- end }}
-            {{- if .Values.cloudControllerManager.helmChart.enabled }}
+            {{- end }}
+            {{- if .Values.helmCharts.kubevirtCloudControllerManager.enabled }}
             - name: kubevirt-cloud-controller-manager
               chartname: oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-cloud-controller-manager
               version: 1.2.6

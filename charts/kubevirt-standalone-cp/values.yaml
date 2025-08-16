@@ -173,6 +173,14 @@ k0s: # @schema description: K0s parameters; type: object
   network: # @schema description: Network configuration for K0s; type: object
     vxlanPort: 6789 # @schema description: Port to use for VXLAN tunnels; type: number; minimum: 1; maximum: 65535
 
+helmCharts: # @schema description: Helm chart deployment configurations; type: object
+  kubernetesCSIExternalSnapshotter:
+    enabled: false # @schema description: Enable kubernetes-csi-external-snapshotter helm chart in k0s; type: boolean
+  kubevirtCSIDriverTenant:
+    enabled: false # @schema description: Enable kubevirt-csi-driver-tenant helm chart in k0s; type: boolean
+  kubevirtCloudControllerManager:
+    enabled: true # @schema description: Enable kubevirt-cloud-controller-manager helm chart in k0s; type: boolean
+
 cloudControllerManager:
   helmChart:
     enabled: true # @schema description: Enable kubevirt-cloud-controller-manager helm chart in k0s; type: boolean
