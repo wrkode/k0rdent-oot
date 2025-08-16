@@ -125,7 +125,7 @@ spec:
             {{- if .Values.cloudControllerManager.helmChart.enabled }}
             - name: kubevirt-cloud-controller-manager
               chartname: oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-cloud-controller-manager
-              version: 1.2.3
+              version: 1.2.4
               order: 3
               namespace: kube-system
               values: |

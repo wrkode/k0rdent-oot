@@ -15,3 +15,6 @@ cloudControllerManager:
       topologyKey: topology.kubernetes.io/zone
       maxSkew: 1
       whenUnsatisfiable: ScheduleAnyway
+
+cloudConfig:
+  kubeconfig: /etc/kubernetes/kubeconfig/value

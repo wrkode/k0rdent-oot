@@ -1,6 +1,9 @@
 apiVersion: v1
 data:
   cloud-config: |
+    {{- if .Values.cloudConfig.kubeconfig }}
+    kubeconfig: {{ .Values.cloudConfig.kubeconfig }}
+    {{- end }}
     instancesV2:
       enabled: true
       zoneAndRegionEnabled: true
