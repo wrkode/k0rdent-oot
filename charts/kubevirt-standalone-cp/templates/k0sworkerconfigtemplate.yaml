@@ -12,8 +12,10 @@ spec:
       {{- end }}
       version: {{ .Values.k0s.version }}
       args:
+        {{- if .Values.k0s.cloudProvider.enabled }}
         - --enable-cloud-provider
         - --kubelet-extra-args="--cloud-provider=external"
+        {{- end }}
       files:
       {{- if .Values.worker.files }}
         {{- toYaml .Values.worker.files | nindent 8 }}
