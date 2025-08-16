@@ -15,6 +15,10 @@ spec:
           runStrategy: {{ .Values.controlPlane.runStrategy }}
           template:
             spec:
+              {{- with .Values.controlPlane.nodeSelector }}
+              nodeSelector:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
               # https://doc.crds.dev/github.com/kubernetes-sigs/cluster-api-provider-kubevirt/infrastructure.cluster.x-k8s.io/KubevirtMachineTemplate/v1alpha1@v0.1.9#spec-template-spec-virtualMachineTemplate-spec-template
               domain:
                 cpu:
