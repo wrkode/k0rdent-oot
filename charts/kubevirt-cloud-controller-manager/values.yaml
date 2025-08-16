@@ -18,3 +18,5 @@ cloudControllerManager:
 
 cloudConfig:
   kubeconfig: /etc/kubernetes/kubeconfig/value
+  loadBalancer:
+    enabled: false

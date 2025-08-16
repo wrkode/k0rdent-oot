@@ -8,6 +8,7 @@ data:
       enabled: true
       zoneAndRegionEnabled: true
     loadBalancer:
+      enabled: {{ .Values.cloudConfig.loadBalancer.enabled }}
       creationPollInterval: 5
       creationPollTimeout: 60
     namespace: {{ .Release.Namespace | trunc 63 }}
