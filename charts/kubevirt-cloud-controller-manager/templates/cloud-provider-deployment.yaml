@@ -2,18 +2,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    k8s-app: kubevirt-cloud-controller-manager-{{ .Release.Name }}
-  name: kubevirt-cloud-controller-manager-{{ .Release.Name }}
+    k8s-app: kubevirt-ccm-{{ .Release.Name }}
+  name: kubevirt-ccm-{{ .Release.Name }}
   namespace: {{ .Release.Namespace | trunc 63 }}
 spec:
   replicas: {{ .Values.cloudControllerManager.replicas }}
   selector:
     matchLabels:
-      k8s-app: kubevirt-cloud-controller-manager-{{ .Release.Name }}
+      k8s-app: kubevirt-ccm-{{ .Release.Name }}
   template:
     metadata:
       labels:
-        k8s-app: kubevirt-cloud-controller-manager-{{ .Release.Name }}
+        k8s-app: kubevirt-ccm-{{ .Release.Name }}
     spec:
       containers:
       - args:
