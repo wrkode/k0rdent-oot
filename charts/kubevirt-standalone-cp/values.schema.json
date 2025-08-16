@@ -57,39 +57,55 @@
         },
         "cluster": {
             "description": "Basic cluster information",
-            "type": "object"
+            "type": [
+                "object"
+            ]
         },
         "clusterAnnotations": {
             "description": "Annotations to apply to the cluster",
-            "type": "object",
+            "type": [
+                "object"
+            ],
             "additionalProperties": true
         },
         "clusterIdentity": {
             "description": "The KubeVirt Service Account credentials secret reference, auto-populated",
-            "type": "object",
+            "type": [
+                "object"
+            ],
             "properties": {
                 "name": {
                     "description": "The KubeVirt Service Account credentials secret name, auto-populated",
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 }
             }
         },
         "clusterLabels": {
             "description": "Labels to apply to the cluster",
-            "type": "object",
+            "type": [
+                "object"
+            ],
             "additionalProperties": true
         },
         "clusterNetwork": {
             "description": "The cluster network configuration",
-            "type": "object",
+            "type": [
+                "object"
+            ],
             "properties": {
                 "pods": {
                     "description": "The network ranges from which Pod networks are allocated",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "cidrBlocks": {
                             "description": "A list of CIDR blocks",
-                            "type": "array",
+                            "type": [
+                                "array"
+                            ],
                             "items": {
                                 "type": "string"
                             }
@@ -98,11 +114,15 @@
                 },
                 "services": {
                     "description": "The network ranges from which service VIPs are allocated",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "cidrBlocks": {
                             "description": "A list of CIDR blocks",
-                            "type": "array",
+                            "type": [
+                                "array"
+                            ],
                             "items": {
                                 "type": "string"
                             }
@@ -113,14 +133,18 @@
         },
         "controlPlane": {
             "description": "Control plane parameters",
-            "type": "object",
+            "type": [
+                "object"
+            ],
             "properties": {
                 "additionalNetworkInterfaces": {
                     "type": "array"
                 },
                 "bootstrapCheckStrategy": {
                     "description": "Strategy for bootstrap checks",
-                    "type": "string",
+                    "type": [
+                        "string"
+                    ],
                     "enum": [
                         "none",
                         "ssh"
@@ -128,17 +152,23 @@
                 },
                 "cloudInit": {
                     "description": "Cloud-init configuration",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "userData": {
                             "description": "Cloud-init user data",
-                            "type": "string"
+                            "type": [
+                                "string"
+                            ]
                         }
                     }
                 },
                 "cpus": {
                     "description": "Number of CPUs allocated to control plane nodes",
-                    "type": "integer",
+                    "type": [
+                        "integer"
+                    ],
                     "minimum": 1
                 },
                 "dataVolumes": {
@@ -146,11 +176,15 @@
                 },
                 "defaultNetworkInterface": {
                     "description": "Default network interface configuration",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "type": {
                             "description": "Interface type (bridge, masquerade, sriov)",
-                            "type": "string",
+                            "type": [
+                                "string"
+                            ],
                             "enum": [
                                 "bridge",
                                 "masquerade",
@@ -164,19 +198,27 @@
                 },
                 "image": {
                     "description": "Container disk image for control plane nodes",
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 },
                 "memory": {
                     "description": "Memory allocated to control plane nodes",
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 },
                 "networkInterfaceMultiqueue": {
                     "description": "Enable network interface multiqueue",
-                    "type": "boolean"
+                    "type": [
+                        "boolean"
+                    ]
                 },
                 "preStartCommands": {
                     "description": "Commands to run before starting K0s service",
-                    "type": "array",
+                    "type": [
+                        "array"
+                    ],
                     "items": {
                         "type": "string"
                     }
@@ -188,32 +230,96 @@
         },
         "controlPlaneNumber": {
             "description": "The number of the control plane nodes",
-            "type": "number",
+            "type": [
+                "number"
+            ],
             "minimum": 1
         },
         "k0s": {
             "description": "K0s parameters",
-            "type": "object",
+            "type": [
+                "object"
+            ],
             "properties": {
                 "api": {
                     "description": "Kubernetes API server parameters",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "extraArgs": {
                             "description": "Map of key-values (strings) for any extra arguments to pass down to Kubernetes api-server process",
-                            "type": "object",
+                            "type": [
+                                "object"
+                            ],
                             "additionalProperties": true
                         }
                     },
                     "additionalProperties": true
                 },
+                "cloudProvider": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "description": "Enable cloud provider support",
+                            "type": [
+                                "boolean"
+                            ]
+                        }
+                    }
+                },
+                "helmCharts": {
+                    "description": "Helm chart deployment configurations",
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "kubernetesCSIExternalSnapshotter": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "description": "Enable kubernetes-csi-external-snapshotter helm chart in k0s",
+                                    "type": [
+                                        "boolean"
+                                    ]
+                                }
+                            }
+                        },
+                        "kubevirtCSIDriverTenant": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "description": "Enable kubevirt-csi-driver-tenant helm chart in k0s",
+                                    "type": [
+                                        "boolean"
+                                    ]
+                                }
+                            }
+                        },
+                        "kubevirtCloudControllerManager": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "description": "Enable kubevirt-cloud-controller-manager helm chart in k0s",
+                                    "type": [
+                                        "boolean"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
                 "network": {
                     "description": "Network configuration for K0s",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "vxlanPort": {
                             "description": "Port to use for VXLAN tunnels",
-                            "type": "number",
+                            "type": [
+                                "number"
+                            ],
                             "maximum": 65535,
                             "minimum": 1
                         }
@@ -221,7 +327,9 @@
                 },
                 "version": {
                     "description": "K0s version",
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 }
             }
         },
@@ -377,23 +485,31 @@
         },
         "objects": {
             "description": "List of generic Kubernetes objects to create",
-            "type": "array"
+            "type": [
+                "array"
+            ]
         },
         "worker": {
             "description": "Worker parameters",
-            "type": "object",
+            "type": [
+                "object"
+            ],
             "properties": {
                 "additionalNetworkInterfaces": {
                     "type": "array"
                 },
                 "annotations": {
                     "description": "Annotations to apply to VirtualMachine and template",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "additionalProperties": true
                 },
                 "bootstrapCheckStrategy": {
                     "description": "Strategy for bootstrap checks",
-                    "type": "string",
+                    "type": [
+                        "string"
+                    ],
                     "enum": [
                         "none",
                         "ssh"
@@ -401,40 +517,56 @@
                 },
                 "cloudInit": {
                     "description": "Cloud-init configuration",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "userData": {
                             "description": "Cloud-init user data",
-                            "type": "string"
+                            "type": [
+                                "string"
+                            ]
                         }
                     }
                 },
                 "cpu": {
                     "description": "CPU configuration",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "dedicatedCpuPlacement": {
                             "description": "Enable dedicated CPU placement",
-                            "type": "boolean"
+                            "type": [
+                                "boolean"
+                            ]
                         },
                         "isolateEmulatorThread": {
                             "description": "Isolate emulator thread",
-                            "type": "boolean"
+                            "type": [
+                                "boolean"
+                            ]
                         },
                         "model": {
                             "description": "CPU model (e.g., host-passthrough)",
-                            "type": "string"
+                            "type": [
+                                "string"
+                            ]
                         },
                         "numa": {
                             "description": "NUMA configuration",
-                            "type": "object",
+                            "type": [
+                                "object"
+                            ],
                             "additionalProperties": true
                         }
                     }
                 },
                 "cpus": {
                     "description": "Number of CPUs allocated to worker nodes",
-                    "type": "integer",
+                    "type": [
+                        "integer"
+                    ],
                     "minimum": 1
                 },
                 "dataVolumes": {
@@ -442,11 +574,15 @@
                 },
                 "defaultNetworkInterface": {
                     "description": "Default network interface configuration",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "type": {
                             "description": "Interface type (bridge, masquerade, sriov)",
-                            "type": "string",
+                            "type": [
+                                "string"
+                            ],
                             "enum": [
                                 "bridge",
                                 "masquerade",
@@ -457,23 +593,33 @@
                 },
                 "devices": {
                     "description": "Device configuration",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "autoattachGraphicsDevice": {
                             "description": "Auto-attach graphics device",
-                            "type": "boolean"
+                            "type": [
+                                "boolean"
+                            ]
                         },
                         "autoattachMemBalloon": {
                             "description": "Auto-attach memory balloon",
-                            "type": "boolean"
+                            "type": [
+                                "boolean"
+                            ]
                         },
                         "autoattachSerialConsole": {
                             "description": "Auto-attach serial console",
-                            "type": "boolean"
+                            "type": [
+                                "boolean"
+                            ]
                         },
                         "hostDevices": {
                             "description": "Host devices to attach",
-                            "type": "array"
+                            "type": [
+                                "array"
+                            ]
                         }
                     }
                 },
@@ -482,11 +628,15 @@
                 },
                 "image": {
                     "description": "Container disk image for worker nodes",
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 },
                 "imagePullPolicy": {
                     "description": "Image pull policy for container disk",
-                    "type": "string",
+                    "type": [
+                        "string"
+                    ],
                     "enum": [
                         "Always",
                         "IfNotPresent",
@@ -495,43 +645,61 @@
                 },
                 "memory": {
                     "description": "Memory allocated to worker nodes",
-                    "type": "string"
+                    "type": [
+                        "string"
+                    ]
                 },
                 "memoryConfig": {
                     "description": "Advanced memory configuration",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "properties": {
                         "guest": {
                             "description": "Guest memory (e.g., 512Gi)",
-                            "type": "string"
+                            "type": [
+                                "string"
+                            ]
                         },
                         "hugepages": {
                             "description": "Hugepages configuration",
-                            "type": "object",
+                            "type": [
+                                "object"
+                            ],
                             "additionalProperties": true
                         },
                         "limits": {
                             "description": "Memory limits (e.g., 528Gi)",
-                            "type": "string"
+                            "type": [
+                                "string"
+                            ]
                         },
                         "requests": {
                             "description": "Memory requests (e.g., 528Gi)",
-                            "type": "string"
+                            "type": [
+                                "string"
+                            ]
                         }
                     }
                 },
                 "networkInterfaceMultiqueue": {
                     "description": "Enable network interface multiqueue",
-                    "type": "boolean"
+                    "type": [
+                        "boolean"
+                    ]
                 },
                 "nodeSelector": {
                     "description": "Node selector for VM placement",
-                    "type": "object",
+                    "type": [
+                        "object"
+                    ],
                     "additionalProperties": true
                 },
                 "preStartCommands": {
                     "description": "Commands to run before starting K0s service",
-                    "type": "array",
+                    "type": [
+                        "array"
+                    ],
                     "items": {
                         "type": "string"
                     }
@@ -543,7 +711,9 @@
         },
         "workersNumber": {
             "description": "The number of the worker nodes",
-            "type": "number",
+            "type": [
+                "number"
+            ],
             "minimum": 1
         }
     }

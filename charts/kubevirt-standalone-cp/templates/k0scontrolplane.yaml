@@ -13,8 +13,10 @@ spec:
     {{- end }}
     args:
       - --enable-worker
+      {{- if .Values.k0s.cloudProvider.enabled }}
       - --enable-cloud-provider
       - --kubelet-extra-args="--cloud-provider=external"
+      {{- end }}
       - --disable-components=konnectivity-server
     files:
     {{- if .Values.controlPlane.files }}
@@ -87,7 +89,7 @@ spec:
         extensions:
           helm:
             charts:
-            {{- if .Values.helmCharts.kubernetesCSIExternalSnapshotter.enabled }}
+            {{- if .Values.k0s.helmCharts.kubernetesCSIExternalSnapshotter.enabled }}
             - name: kubernetes-csi-external-snapshotter
               {{- if $global.registry }}
               chartname: oci://{{ $global.registry }}/k0rdent-oot/oot/charts/kubernetes-csi-external-snapshotter
@@ -103,7 +105,7 @@ spec:
                   repository: {{ $global.registry }}/sig-storage/snapshot-controller
               {{- end }}
             {{- end }}
-            {{- if .Values.helmCharts.kubevirtCSIDriverTenant.enabled }}
+            {{- if .Values.k0s.helmCharts.kubevirtCSIDriverTenant.enabled }}
             - name: kubevirt-csi-driver-tenant
               {{- if $global.registry }}
               chartname: oci://{{ $global.registry }}/k0rdent-oot/oot/charts/kubevirt-csi-driver-tenant
@@ -126,7 +128,7 @@ spec:
                   repo: {{ $global.registry }}/sig-storage
               {{- end }}
             {{- end }}
-            {{- if .Values.helmCharts.kubevirtCloudControllerManager.enabled }}
+            {{- if .Values.k0s.helmCharts.kubevirtCloudControllerManager.enabled }}
             - name: kubevirt-cloud-controller-manager
               chartname: oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-cloud-controller-manager
               version: 1.2.6
