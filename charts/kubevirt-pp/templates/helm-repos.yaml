@@ -3,8 +3,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
   name: oot-repo
-  namespace:
-    {{ .Values.config.namespace | default .Release.Namespace | trunc 63 }}
+  namespace: {{ .Values.config.namespace | default .Release.Namespace | trunc 63 }}
   annotations:
     helm.sh/resource-policy: keep
   labels:

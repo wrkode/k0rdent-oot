@@ -7,7 +7,7 @@
 > Note: if using `cilium` [without `kube-proxy`](https://github.com/cilium/cilium/blob/main/Documentation/network/kubernetes/kubeproxy-free.rst), run `cilium config set bpf-lb-sock-hostns-only true`, or use [Helm chart](https://github.com/cilium/cilium/blob/main/Documentation/network/kubernetes/kubeproxy-free.rst#socket-loadbalancer-bypass-in-pod-namespace) option
 
 ```bash
-helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 0.3.0 -n kcm-system --create-namespace \
+helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.2.0 -n kcm-system --create-namespace \
   --set controller.enableTelemetry=false \
   --set velero.enabled=false
 ```
@@ -165,7 +165,7 @@ metadata:
   name: kubevirt-demo
   namespace: kcm-system
 spec:
-  template: kubevirt-standalone-cp-1-0-0
+  template: kubevirt-standalone-cp-1-5-0
   credential: kubevirt-cluster-identity-cred
   config:
     controlPlaneNumber: 1
