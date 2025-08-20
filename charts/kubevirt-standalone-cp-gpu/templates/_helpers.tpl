@@ -1,6 +1,6 @@
 {{- define "cluster.name" -}}
-    {{- .Release.Name | trunc 63 | trimSuffix "-" }}
-{{- end }}
+    {{- .Values.cluster.name | default .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 
 {{- define "kubevirtmachinetemplate.controlplane.name" -}}
     {{- include "cluster.name" . }}-cp-mt

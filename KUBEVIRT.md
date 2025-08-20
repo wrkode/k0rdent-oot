@@ -43,9 +43,7 @@ helm install kubevirt-pp oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt-pp -n kcm
 
 ```bash
 helm install kubevirt oci://ghcr.io/k0rdent-oot/oot/charts/kubevirt -n kubevirt --take-ownership --create-namespace \
-  --set-string spec.configuration.developerConfiguration.useEmulation=true \
-  --set spec.configuration.developerConfiguration.cpuRequest=10m \
-  --set spec.configuration.developerConfiguration.memoryOvercommit=150
+  --set-string spec.configuration.developerConfiguration.useEmulation=true
 ```
 
 #### Using values file for complex overrides
@@ -96,7 +94,7 @@ kubectl patch mgmt kcm \
       "path": "/spec/providers/-",
       "value": {
         "name": "cluster-api-provider-kubevirt",
-        "template": "cluster-api-provider-kubevirt-1-0-0",
+        "template": "cluster-api-provider-kubevirt-1-5-0",
       }
     }
   ]'
@@ -133,7 +131,7 @@ metadata:
   labels:
     k0rdent.mirantis.com/component: "kcm"
 ---
-apiVersion: k0rdent.mirantis.com/v1alpha1
+apiVersion: k0rdent.mirantis.com/v1beta1
 kind: Credential
 metadata:
   name: kubevirt-cluster-identity-cred
@@ -159,7 +157,7 @@ EOF
 
 kubectl apply -f - <<EOF
 ---
-apiVersion: k0rdent.mirantis.com/v1alpha1
+apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ClusterDeployment
 metadata:
   name: kubevirt-demo
@@ -186,7 +184,7 @@ EOF
 #### Describe cluster status.
 
 ```bash
-clusterctl describe cluster kubevirt-demo
+clusterctl -n kcm-system describe cluster kubevirt-demo
 ```
 
 #### Get `ClusterDeployment` objects.
@@ -198,25 +196,25 @@ kubectl get cld -A
 #### Get `Cluster`, `Machine` objects.
 
 ```bash
-kubectl get cluster,machine
+kubectl get cluster,machine -A
 ```
 
 #### Get `K0sControlPlane`, `KubevirtCluster` objects.
 
 ```bash
-kubectl get K0sControlPlane,KubevirtCluster
+kubectl get K0sControlPlane,KubevirtCluster -A
 ```
 
 #### Get `KubeVirt` VM objects.
 
 ```bash
-kubectl get vm,vmi
+kubectl get vm,vmi -A
 ```
 
 #### Get into the Machine console where `kubevirt-demo-cp-0` is `Machine` name.
 
 ```bash
-virtctl console kubevirt-demo-cp-0
+virtctl -n kcm-system console kubevirt-demo-cp-0
 ```
 
 #### Set console size.
@@ -228,14 +226,14 @@ stty rows 40 cols 1000
 #### Get child cluster `kubeconfig` where `kubevirt-demo` is the cluster name.
 
 ```bash
-clusterctl get kubeconfig kubevirt-demo > kubevirt-demo.kubeconfig
+clusterctl -n kcm-system get kubeconfig kubevirt-demo > kubevirt-demo.kubeconfig
 ```
 
 ##### Note: when using `KinD` you may need to add a route manually.
 
 ```bash
 ip r replace \
-  $(kubectl get cluster kubevirt-demo -o json | \
+  $(kubectl -n kcm-system get cluster kubevirt-demo -o json | \
     jq -r '.spec.controlPlaneEndpoint.host') \
   via \
   $(docker network inspect -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}' kind)

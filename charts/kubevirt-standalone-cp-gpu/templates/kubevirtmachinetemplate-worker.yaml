@@ -45,7 +45,13 @@ spec:
                   numa:
                     {{- toYaml . | nindent 20 }}
                   {{- end }}
+                {{- if .Values.worker.ioThreadsPolicy }}
+                ioThreadsPolicy: {{ .Values.worker.ioThreadsPolicy }}
+                {{- end }}
                 devices:
+                  {{- if .Values.worker.blockMultiQueue }}
+                  blockMultiQueue: {{ .Values.worker.blockMultiQueue }}
+                  {{- end }}
                   {{- if hasKey .Values.worker.devices "autoattachMemBalloon" }}
                   autoattachMemBalloon: {{ .Values.worker.devices.autoattachMemBalloon }}
                   {{- end }}
@@ -85,11 +91,19 @@ spec:
                     - disk:
                         bus: virtio
                       name: containerdisk
+                      {{- if .Values.worker.diskCache }}
+                      cache: {{ .Values.worker.diskCache }}
+                      {{- end }}
                   {{- if .Values.worker.cloudInit.userData }}
                     - disk:
                         bus: virtio
                       name: cloudinitdisk
                   {{- end }}
+                  {{- end }}
+                  {{- range .Values.worker.hostDisks }}
+                    - disk:
+                        bus: virtio
+                      name: {{ .name }}
                   {{- end }}
                   {{- with .Values.worker.devices.hostDevices }}
                   hostDevices:
@@ -148,6 +162,12 @@ spec:
                   cloudInitNoCloud:
                     userData: {{ .Values.worker.cloudInit.userData | quote }}
                 {{- end }}
+                {{- end }}
+                {{- range .Values.worker.hostDisks }}
+                - name: {{ .name }}
+                  hostDisk:
+                    path: {{ .path }}
+                    type: {{ .type | default "Disk" }}
                 {{- end }}
           {{- if .Values.worker.dataVolumes }}
           dataVolumeTemplates:

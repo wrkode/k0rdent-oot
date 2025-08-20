@@ -11,9 +11,18 @@ spec:
       virtualMachineTemplate:
         metadata:
           namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+          {{- with .Values.controlPlane.annotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
         spec:
           runStrategy: {{ .Values.controlPlane.runStrategy }}
           template:
+            metadata:
+              {{- with .Values.controlPlane.annotations }}
+              annotations:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
             spec:
               {{- with .Values.controlPlane.nodeSelector }}
               nodeSelector:
@@ -23,7 +32,35 @@ spec:
               domain:
                 cpu:
                   cores: {{ .Values.controlPlane.cpus }}
+                  {{- if .Values.controlPlane.cpu.dedicatedCpuPlacement }}
+                  dedicatedCpuPlacement: {{ .Values.controlPlane.cpu.dedicatedCpuPlacement }}
+                  {{- end }}
+                  {{- if .Values.controlPlane.cpu.isolateEmulatorThread }}
+                  isolateEmulatorThread: {{ .Values.controlPlane.cpu.isolateEmulatorThread }}
+                  {{- end }}
+                  {{- if .Values.controlPlane.cpu.model }}
+                  model: {{ .Values.controlPlane.cpu.model }}
+                  {{- end }}
+                  {{- with .Values.controlPlane.cpu.numa }}
+                  numa:
+                    {{- toYaml . | nindent 20 }}
+                  {{- end }}
+                {{- if .Values.controlPlane.ioThreadsPolicy }}
+                ioThreadsPolicy: {{ .Values.controlPlane.ioThreadsPolicy }}
+                {{- end }}
                 devices:
+                  {{- if .Values.controlPlane.blockMultiQueue }}
+                  blockMultiQueue: {{ .Values.controlPlane.blockMultiQueue }}
+                  {{- end }}
+                  {{- if hasKey .Values.controlPlane.devices "autoattachMemBalloon" }}
+                  autoattachMemBalloon: {{ .Values.controlPlane.devices.autoattachMemBalloon }}
+                  {{- end }}
+                  {{- if hasKey .Values.controlPlane.devices "autoattachSerialConsole" }}
+                  autoattachSerialConsole: {{ .Values.controlPlane.devices.autoattachSerialConsole }}
+                  {{- end }}
+                  {{- if hasKey .Values.controlPlane.devices "autoattachGraphicsDevice" }}
+                  autoattachGraphicsDevice: {{ .Values.controlPlane.devices.autoattachGraphicsDevice }}
+                  {{- end }}
                   interfaces:
                   - name: default
                     {{- if eq .Values.controlPlane.defaultNetworkInterface.type "bridge" }}
@@ -54,15 +91,51 @@ spec:
                     - disk:
                         bus: virtio
                       name: containerdisk
+                      {{- if .Values.controlPlane.diskCache }}
+                      cache: {{ .Values.controlPlane.diskCache }}
+                      {{- end }}
                   {{- if .Values.controlPlane.cloudInit.userData }}
                     - disk:
                         bus: virtio
                       name: cloudinitdisk
                   {{- end }}
                   {{- end }}
+                  {{- range .Values.controlPlane.hostDisks }}
+                    - disk:
+                        bus: virtio
+                      name: {{ .name }}
+                  {{- end }}
+                  {{- with .Values.controlPlane.devices.hostDevices }}
+                  hostDevices:
+                    {{- toYaml . | nindent 20 }}
+                  {{- end }}
                   networkInterfaceMultiqueue: {{ .Values.controlPlane.networkInterfaceMultiqueue }}
+                {{- if or .Values.controlPlane.memoryConfig.hugepages .Values.controlPlane.memoryConfig.guest }}
+                memory:
+                  {{- if .Values.controlPlane.memoryConfig.guest }}
+                  guest: {{ .Values.controlPlane.memoryConfig.guest }}
+                  {{- else }}
+                  guest: {{ .Values.controlPlane.memory }}
+                  {{- end }}
+                  {{- with .Values.controlPlane.memoryConfig.hugepages }}
+                  hugepages:
+                    {{- toYaml . | nindent 20 }}
+                  {{- end }}
+                {{- else }}
                 memory:
                   guest: {{ .Values.controlPlane.memory }}
+                {{- end }}
+                {{- if or .Values.controlPlane.memoryConfig.requests .Values.controlPlane.memoryConfig.limits }}
+                resources:
+                  {{- if .Values.controlPlane.memoryConfig.requests }}
+                  requests:
+                    memory: {{ .Values.controlPlane.memoryConfig.requests }}
+                  {{- end }}
+                  {{- if .Values.controlPlane.memoryConfig.limits }}
+                  limits:
+                    memory: {{ .Values.controlPlane.memoryConfig.limits }}
+                  {{- end }}
+                {{- end }}
               evictionStrategy: External
               networks:
                 - name: default
@@ -81,11 +154,20 @@ spec:
                 - name: containerdisk
                   containerDisk:
                     image: {{ .Values.controlPlane.image }}
+                    {{- if .Values.controlPlane.imagePullPolicy }}
+                    imagePullPolicy: {{ .Values.controlPlane.imagePullPolicy }}
+                    {{- end }}
                 {{- if .Values.controlPlane.cloudInit.userData }}
                 - name: cloudinitdisk
                   cloudInitNoCloud:
                     userData: {{ .Values.controlPlane.cloudInit.userData | quote }}
                 {{- end }}
+                {{- end }}
+                {{- range .Values.controlPlane.hostDisks }}
+                - name: {{ .name }}
+                  hostDisk:
+                    path: {{ .path }}
+                    type: {{ .type | default "Disk" }}
                 {{- end }}
           {{- if .Values.controlPlane.dataVolumes }}
           dataVolumeTemplates:

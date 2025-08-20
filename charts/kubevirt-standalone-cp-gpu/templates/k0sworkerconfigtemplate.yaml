@@ -10,16 +10,24 @@ spec:
       downloadURL: "{{ .Values.k0s.downloadURL }}"
       {{- end }}
       version: {{ .Values.k0s.version }}
+      useSystemHostname: {{ .Values.worker.useSystemHostname | default false }}
+      {{- if .Values.worker.preInstalledK0s }}
+      preInstalledK0s: {{ .Values.worker.preInstalledK0s }}
+      {{- end }}
+      {{- if .Values.k0s.cloudProvider.enabled }}
       args:
-        {{- if .Values.k0s.cloudProvider.enabled }}
         - --enable-cloud-provider
         - --kubelet-extra-args="--cloud-provider=external"
-        {{- end }}
-      files:
+      {{- end }}
       {{- if .Values.worker.files }}
+      files:
         {{- toYaml .Values.worker.files | nindent 8 }}
       {{- end }}
-      preStartCommands:
       {{- with .Values.worker.preStartCommands }}
+      preStartCommands:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.postStartCommands }}
+      postStartCommands:
         {{- toYaml . | nindent 8 }}
       {{- end }}

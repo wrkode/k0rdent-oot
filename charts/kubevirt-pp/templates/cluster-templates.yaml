@@ -2,15 +2,15 @@
 apiVersion: k0rdent.mirantis.com/v1beta1
 kind: ClusterTemplate
 metadata:
-  name: kubevirt-standalone-cp-1-5-0
+  name: {{ .Values.clusterTemplate.chartName }}-{{ .Values.clusterTemplate.version | replace "." "-" }}
   namespace: {{ .Values.config.namespace | default .Release.Namespace | trunc 63 }}
   annotations:
     helm.sh/resource-policy: keep
 spec:
   helm:
     chartSpec:
-      chart: kubevirt-standalone-cp
-      version: 1.5.0
+      chart: {{ .Values.clusterTemplate.chartName }}
+      version: {{ .Values.clusterTemplate.version }}
       interval: 10m0s
       sourceRef:
         kind: HelmRepository
