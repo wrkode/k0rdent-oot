@@ -1,3 +1,7 @@
 .DS_Store
 TEMP/
 *.tgz
+
+# Helm chart testing artifacts
+helm_test_temp/
+helm_test_*/
