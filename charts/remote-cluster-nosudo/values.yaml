@@ -1,0 +1,99 @@
+# @schema title: Remote Cluster Configuration (No Sudo)
+# @schema description: Configuration for remote cluster deployment without sudo access
+
+# Cluster parameters
+controlPlaneNumber: 1 # @schema description: The number of the control plane nodes; type: number; minimum: 1
+workersNumber: 1 # @schema description: The number of the worker nodes; type: number; minimum: 1
+
+clusterIdentity: # @schema description: The remote SSH credentials secret reference, auto-populated; type: object
+  name: "" # @schema description: The remote SSH credentials secret name, auto-populated; type: string
+
+cluster: {} # @schema description: Basic cluster information; type: object
+  # name: "" # @schema description: The name of the cluster; type: string
+  # namespace: "default" # @schema description: The namespace where cluster resources will be created; type: string
+
+clusterNetwork: # @schema description: The cluster network configuration; type: object
+  pods: # @schema description: The network ranges from which Pod networks are allocated; type: object
+    cidrBlocks: # @schema description: A list of CIDR blocks; type: array; item: string
+      - "10.243.0.0/16"
+  services: # @schema description: The network ranges from which service VIPs are allocated; type: object
+    cidrBlocks: # @schema description: A list of CIDR blocks; type: array; item: string
+      - "10.95.0.0/16"
+
+clusterLabels: {} # @schema description: Labels to apply to the cluster; type: object; additionalProperties: true
+clusterAnnotations: {} # @schema description: Annotations to apply to the cluster; type: object; additionalProperties: true
+
+# Remote machines parameters
+machines: # @schema description: Remote machines configuration; type: array
+  - address: "" # @schema description: IP address or hostname of the remote machine; type: string
+    user: "root" # @schema description: SSH user for connecting to the remote machine (root for direct access); type: string
+    port: 22 # @schema description: SSH port for the remote machine; type: integer; minimum: 1; maximum: 65535
+    sshKeyPath: "" # @schema description: Path to SSH private key on the local machine; type: string
+    hostKey: "" # @schema description: SSH host key for verification (optional); type: string
+    role: "worker" # @schema description: Role of the machine in the cluster; type: string; enum: ["worker", "control-plane"]
+
+# Service configuration for k0s API server
+k0smotron: # @schema description: k0smotron configuration; type: object
+  service: # @schema description: Service configuration for k0s API server; type: object
+    type: LoadBalancer # @schema description: Kubernetes service type; type: string; enum: ["ClusterIP", "NodePort", "LoadBalancer"]
+    annotations: {} # @schema description: Service annotations; type: object; additionalProperties: true
+
+# K0s parameters - configured for non-sudo deployment
+k0s: # @schema description: K0s parameters; type: object
+  version: v1.31.5+k0s.0 # @schema description: K0s version; type: string
+  downloadURL: "" # @schema description: Custom download URL for K0s binary. If empty, uses default K0s release URL; type: string
+  config: # @schema description: K0s configuration; type: object
+    spec: # @schema description: K0s cluster configuration specification; type: object
+      api: # @schema description: Kubernetes API server parameters; type: object; additionalProperties: true
+        extraArgs: # @schema description: Map of key-values (strings) for any extra arguments to pass down to Kubernetes api-server process; type: object; additionalProperties: true
+          anonymous-auth: "true"
+      network: # @schema description: Network configuration for K0s; type: object
+        podCIDR: "10.243.0.0/16" # @schema description: Pod CIDR block; type: string
+        serviceCIDR: "10.95.0.0/16" # @schema description: Service CIDR block; type: string
+        provider: calico # @schema description: Network provider; type: string; enum: ["calico", "custom"]
+        calico: # @schema description: Calico network configuration; type: object
+          mode: vxlan # @schema description: Calico mode; type: string; enum: ["vxlan", "ipip", "bird"]
+          vxlanPort: 6789 # @schema description: Port to use for VXLAN tunnels; type: number; minimum: 1; maximum: 65535
+          envVars: # @schema description: Environment variables for Calico; type: object; additionalProperties: true
+            CALICO_IPV4POOL_CIDR: "10.243.0.0/16"
+            CLUSTER_TYPE: "k8s"
+            CALICO_IPV4POOL_IPIP: "Never"
+            CALICO_IPV4POOL_VXLAN: "Always"
+            FELIX_VXLANPORT: "6789"
+            FELIX_ALLOWVXLANPACKETSFROMWORKLOADS: "true"
+
+# Machine configuration for root-based deployments (no sudo needed)
+machineConfig: # @schema description: Machine configuration for remote nodes; type: object
+  # User configuration for root access
+  user: # @schema description: User configuration; type: object
+    name: "root" # @schema description: Username for k0s service (running as root); type: string
+    home: "/root" # @schema description: Home directory for the root user; type: string
+    createUser: false # @schema description: Whether to create the user (not needed for root); type: boolean
+  
+  # Installation paths using standard system directories
+  paths: # @schema description: Installation paths; type: object
+    k0sBinary: "/usr/local/bin/k0s" # @schema description: Path to k0s binary; type: string
+    k0sConfig: "/etc/k0s" # @schema description: Path to k0s configuration directory; type: string
+    systemdUnit: "/etc/systemd/system/k0s.service" # @schema description: Path to systemd system service file; type: string
+    
+  # Pre-installation commands that work as root
+  preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; item: string
+    - "mkdir -p /usr/local/bin"
+    - "mkdir -p /etc/k0s"
+    - "mkdir -p /var/lib/k0s"
+    - "export PATH=/usr/local/bin:$PATH"
+    
+  # Post-installation commands
+  postStartCommands: # @schema description: Commands to run after starting K0s service; type: array; item: string
+    - "systemctl daemon-reload"
+    - "systemctl enable k0s"
+    - "systemctl start k0s"
+
+# Generic objects creation
+objects: [] # @schema description: List of generic Kubernetes objects to create; type: array
+
+# Enable/disable components
+components: # @schema description: Component configuration; type: object
+  machineHealthCheck: # @schema description: Machine health check configuration; type: object
+    enabled: false # @schema description: Enable machine health checks; type: boolean
+    maxUnhealthy: 40% # @schema description: Maximum unhealthy machines threshold; type: string

@@ -1,0 +1,20 @@
+{{- if .Values.components.machineHealthCheck.enabled }}
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: {{ include "cluster.name" . }}-mhc
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  clusterName: {{ include "cluster.name" . }}
+  maxUnhealthy: {{ .Values.components.machineHealthCheck.maxUnhealthy }}
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: {{ include "cluster.name" . }}
+  unhealthyConditions:
+    - type: Ready
+      status: "False"
+      timeout: 300s
+    - type: Ready
+      status: Unknown
+      timeout: 300s
+{{- end }}

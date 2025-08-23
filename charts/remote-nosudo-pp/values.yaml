@@ -1,0 +1,6 @@
+clusterTemplate: # @schema description: Cluster template configuration; type: object
+  chartName: "remote-cluster-nosudo" # @schema description: Name of the chart to use for cluster template; type: string
+  version: "1.0.0" # @schema description: Version of the chart to use for cluster template; type: string
+
+config: # @schema description: Configuration settings; type: object
+  namespace: "" # @schema description: Namespace for objects; type: string

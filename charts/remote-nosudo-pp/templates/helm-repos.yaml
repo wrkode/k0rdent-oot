@@ -1,0 +1,9 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: oot-repo
+  namespace: {{ .Values.config.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  interval: 10m0s
+  url: ghcr.io/k0rdent-oot/oot/charts/

@@ -1,0 +1,18 @@
+apiVersion: v2
+name: remote-nosudo-pp
+description: Provider package for remote cluster deployment without sudo access
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: k0rdent-team
+    email: support@k0rdent.io
+keywords:
+  - k0rdent
+  - k0s
+  - remote
+  - cluster
+  - ssh
+  - provider
+sources:
+  - https://github.com/k0rdent-oot/k0rdent-oot

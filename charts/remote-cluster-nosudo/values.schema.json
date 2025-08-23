@@ -1,0 +1,222 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Remote Cluster Configuration (No Sudo)",
+  "description": "Configuration for remote cluster deployment without sudo access",
+  "properties": {
+    "controlPlaneNumber": {
+      "type": "number",
+      "minimum": 1,
+      "description": "The number of the control plane nodes"
+    },
+    "workersNumber": {
+      "type": "number", 
+      "minimum": 1,
+      "description": "The number of the worker nodes"
+    },
+    "clusterIdentity": {
+      "type": "object",
+      "description": "The remote SSH credentials secret reference, auto-populated",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The remote SSH credentials secret name, auto-populated"
+        }
+      }
+    },
+    "cluster": {
+      "type": "object",
+      "description": "Basic cluster information"
+    },
+    "clusterNetwork": {
+      "type": "object",
+      "description": "The cluster network configuration",
+      "properties": {
+        "pods": {
+          "type": "object",
+          "description": "The network ranges from which Pod networks are allocated",
+          "properties": {
+            "cidrBlocks": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "A list of CIDR blocks"
+            }
+          }
+        },
+        "services": {
+          "type": "object", 
+          "description": "The network ranges from which service VIPs are allocated",
+          "properties": {
+            "cidrBlocks": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "A list of CIDR blocks"
+            }
+          }
+        }
+      }
+    },
+    "clusterLabels": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Labels to apply to the cluster"
+    },
+    "clusterAnnotations": {
+      "type": "object", 
+      "additionalProperties": true,
+      "description": "Annotations to apply to the cluster"
+    },
+    "machines": {
+      "type": "array",
+      "description": "Remote machines configuration",
+      "items": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "IP address or hostname of the remote machine"
+          },
+          "user": {
+            "type": "string",
+            "description": "SSH user for connecting to the remote machine"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535,
+            "description": "SSH port for the remote machine"
+          },
+          "sshKeyPath": {
+            "type": "string",
+            "description": "Path to SSH private key on the local machine"
+          },
+          "hostKey": {
+            "type": "string",
+            "description": "SSH host key for verification (optional)"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["worker", "control-plane"],
+            "description": "Role of the machine in the cluster"
+          }
+        }
+      }
+    },
+    "k0smotron": {
+      "type": "object",
+      "description": "k0smotron configuration",
+      "properties": {
+        "service": {
+          "type": "object",
+          "description": "Service configuration for k0s API server",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["ClusterIP", "NodePort", "LoadBalancer"],
+              "description": "Kubernetes service type"
+            },
+            "annotations": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Service annotations"
+            }
+          }
+        }
+      }
+    },
+    "k0s": {
+      "type": "object",
+      "description": "K0s parameters",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "K0s version"
+        },
+        "downloadURL": {
+          "type": "string",
+          "description": "Custom download URL for K0s binary. If empty, uses default K0s release URL"
+        },
+        "config": {
+          "type": "object",
+          "description": "K0s configuration"
+        }
+      }
+    },
+    "machineConfig": {
+      "type": "object",
+      "description": "Machine configuration for remote nodes",
+      "properties": {
+        "user": {
+          "type": "object",
+          "description": "User configuration",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Username for k0s service"
+            },
+            "home": {
+              "type": "string", 
+              "description": "Home directory for the k0s user"
+            },
+            "createUser": {
+              "type": "boolean",
+              "description": "Whether to create the user (requires sudo)"
+            }
+          }
+        },
+        "paths": {
+          "type": "object",
+          "description": "Installation paths",
+          "properties": {
+            "k0sBinary": {
+              "type": "string",
+              "description": "Path to k0s binary"
+            },
+            "k0sConfig": {
+              "type": "string",
+              "description": "Path to k0s configuration directory"
+            },
+            "systemdUnit": {
+              "type": "string",
+              "description": "Path to systemd user service file"
+            }
+          }
+        },
+        "preStartCommands": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Commands to run before starting K0s service"
+        },
+        "postStartCommands": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Commands to run after starting K0s service"
+        }
+      }
+    },
+    "objects": {
+      "type": "array",
+      "description": "List of generic Kubernetes objects to create"
+    },
+    "components": {
+      "type": "object",
+      "description": "Component configuration",
+      "properties": {
+        "machineHealthCheck": {
+          "type": "object",
+          "description": "Machine health check configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable machine health checks"
+            },
+            "maxUnhealthy": {
+              "type": "string",
+              "description": "Maximum unhealthy machines threshold"
+            }
+          }
+        }
+      }
+    }
+  }
+}

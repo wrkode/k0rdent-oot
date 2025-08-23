@@ -1,0 +1,29 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: RemoteMachineTemplate
+metadata:
+  name: {{ include "remotemachinetemplate.name" . }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  template:
+    spec:
+      # SSH connection configuration for root user (no sudo needed)
+      {{- if .Values.machines }}
+      {{- range .Values.machines }}
+      address: {{ .address | quote }}
+      user: {{ .user | default "root" | quote }}
+      port: {{ .port | default 22 }}
+      {{- if .sshKeyPath }}
+      sshKeyPath: {{ .sshKeyPath | quote }}
+      {{- end }}
+      {{- if .hostKey }}
+      hostKey: {{ .hostKey | quote }}
+      {{- end }}
+      # Explicitly disable sudo usage (running as root directly)
+      useSudo: false
+      {{- end }}
+      {{- else }}
+      address: ""
+      user: "root"
+      port: 22
+      useSudo: false
+      {{- end }}

@@ -1,0 +1,47 @@
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: {{ include "k0scontrolplane.name" . }}
+  namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}
+spec:
+  replicas: {{ .Values.controlPlaneNumber }}
+  version: {{ .Values.k0s.version }}
+  k0sConfigSpec:
+    {{- if .Values.k0s.downloadURL }}
+    downloadURL: "{{ .Values.k0s.downloadURL }}"
+    {{- end }}
+    args:
+      - --enable-worker
+      - --disable-components=konnectivity-server
+      # Root-specific arguments using standard system paths
+      - --data-dir={{ .Values.machineConfig.paths.k0sConfig }}
+      - --config={{ .Values.machineConfig.paths.k0sConfig }}/k0s.yaml
+    preStartCommands:
+      # Create necessary directories as root (no sudo needed)
+      {{- with .Values.machineConfig.preStartCommands }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+      # Download and install k0s binary to system directory
+      - "curl -sSLf https://get.k0s.sh | sh -s -- --k0s-version={{ .Values.k0s.version }}"
+      - "mv /tmp/k0s {{ .Values.machineConfig.paths.k0sBinary }}"
+      - "chmod +x {{ .Values.machineConfig.paths.k0sBinary }}"
+      # Create systemd system service
+      - "cat > {{ .Values.machineConfig.paths.systemdUnit }} << 'EOF'"
+      - |
+        {{ include "k0s.systemd.service" . | nindent 8 }}
+      - "EOF"
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        {{- with .Values.k0s.config.spec }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      kind: RemoteMachineTemplate
+      name: {{ include "remotemachinetemplate.name" . }}
+      namespace: {{ .Values.cluster.namespace | default .Release.Namespace | trunc 63 }}

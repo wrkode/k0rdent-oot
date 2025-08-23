@@ -1,0 +1,83 @@
+# Example ClusterDeployment for remote cluster without sudo access
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: my-remote-nosudo-cluster
+  namespace: kcm-system
+spec:
+  template: remote-cluster-nosudo-1-0-0
+  credential: remote-nosudo-cred
+  config:
+    # Basic cluster configuration
+    controlPlaneNumber: 1
+    workersNumber: 2
+    
+    # Network configuration
+    clusterNetwork:
+      pods:
+        cidrBlocks:
+          - "10.243.0.0/16"
+      services:
+        cidrBlocks:
+          - "10.95.0.0/16"
+    
+    # Remote machines configuration
+    machines:
+      - address: "192.168.1.100"
+        user: "root"
+        port: 22
+        role: "worker"
+      - address: "192.168.1.101"
+        user: "root"
+        port: 22
+        role: "worker"
+    
+    # Service configuration for k0s API server
+    k0smotron:
+      service:
+        type: LoadBalancer
+        annotations:
+          # Add cloud provider specific annotations if needed
+          # service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    
+    # K0s configuration
+    k0s:
+      version: v1.31.5+k0s.0
+      config:
+        spec:
+          api:
+            extraArgs:
+              anonymous-auth: "true"
+          network:
+            podCIDR: "10.243.0.0/16"
+            serviceCIDR: "10.95.0.0/16"
+            provider: calico
+            calico:
+              mode: vxlan
+              vxlanPort: 6789
+    
+    # Machine configuration for root-based deployment
+    machineConfig:
+      user:
+        name: "root"
+        home: "/root"
+        createUser: false
+      paths:
+        k0sBinary: "/usr/local/bin/k0s"
+        k0sConfig: "/etc/k0s"
+        systemdUnit: "/etc/systemd/system/k0s.service"
+      preStartCommands:
+        - "mkdir -p /usr/local/bin"
+        - "mkdir -p /etc/k0s"
+        - "mkdir -p /var/lib/k0s"
+        - "export PATH=/usr/local/bin:$PATH"
+      postStartCommands:
+        - "systemctl daemon-reload"
+        - "systemctl enable k0s"
+        - "systemctl start k0s"
+    
+    # Enable health checks
+    components:
+      machineHealthCheck:
+        enabled: true
+        maxUnhealthy: "40%"
