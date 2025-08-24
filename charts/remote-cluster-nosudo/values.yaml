@@ -62,32 +62,18 @@ k0s: # @schema description: K0s parameters; type: object
             FELIX_VXLANPORT: "6789"
             FELIX_ALLOWVXLANPACKETSFROMWORKLOADS: "true"
 
-# Machine configuration for root-based deployments (no sudo needed)
-machineConfig: # @schema description: Machine configuration for remote nodes; type: object
-  # User configuration for root access
-  user: # @schema description: User configuration; type: object
-    name: "root" # @schema description: Username for k0s service (running as root); type: string
-    home: "/root" # @schema description: Home directory for the root user; type: string
-    createUser: false # @schema description: Whether to create the user (not needed for root); type: boolean
-  
-  # Installation paths using standard system directories
-  paths: # @schema description: Installation paths; type: object
-    k0sBinary: "/usr/local/bin/k0s" # @schema description: Path to k0s binary; type: string
-    k0sConfig: "/etc/k0s" # @schema description: Path to k0s configuration directory; type: string
-    systemdUnit: "/etc/systemd/system/k0s.service" # @schema description: Path to systemd system service file; type: string
-    
-  # Pre-installation commands that work as root
-  preStartCommands: # @schema description: Commands to run before starting K0s service; type: array; item: string
-    - "mkdir -p /usr/local/bin"
-    - "mkdir -p /etc/k0s"
+# Remote machines parameters
+controlPlane: # @schema description: Control plane parameters; type: object
+  files: [] # @schema description: Files to create on control plane nodes; type: array
+  preStartCommands: # @schema description: Commands to run before starting K0s service on control plane; type: array; item: string
     - "mkdir -p /var/lib/k0s"
-    - "export PATH=/usr/local/bin:$PATH"
-    
-  # Post-installation commands
-  postStartCommands: # @schema description: Commands to run after starting K0s service; type: array; item: string
-    - "systemctl daemon-reload"
-    - "systemctl enable k0s"
-    - "systemctl start k0s"
+    - "mkdir -p /etc/k0s"
+
+worker: # @schema description: Worker parameters; type: object
+  files: [] # @schema description: Files to create on worker nodes; type: array
+  preStartCommands: # @schema description: Commands to run before starting K0s service on workers; type: array; item: string
+    - "mkdir -p /var/lib/k0s"
+    - "mkdir -p /etc/k0s"
 
 # Generic objects creation
 objects: [] # @schema description: List of generic Kubernetes objects to create; type: array

@@ -1,0 +1,17 @@
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ProviderInterface
+metadata:
+  name: cluster-api-provider-remote
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  providers:
+    - infrastructure-remote
+  clusterGVKs:
+    - group: infrastructure.cluster.x-k8s.io
+      version: v1alpha1
+      kind: RemoteCluster
+  clusterIdentityKinds:
+    - Secret
+  description: "Remote SSH infrastructure provider for Cluster API"

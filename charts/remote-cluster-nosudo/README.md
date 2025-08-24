@@ -12,9 +12,9 @@ This chart is specifically designed for environments where:
 
 ## Key Features
 
-- **No sudo required**: All operations run directly as root
-- **System-wide installation**: k0s binary and configuration stored in standard system directories
-- **Systemd system services**: Uses standard systemd system services
+- **No sudo required**: All operations run directly as root without sudo commands
+- **Cluster API integration**: Proper integration with k0smotron and cluster-api
+- **Automatic k0s management**: k0s binary download and installation handled by cluster-api
 - **Configurable SSH access**: Flexible SSH configuration for various environments
 - **Full k0s functionality**: Complete k0s cluster capabilities with root privileges
 
@@ -126,15 +126,14 @@ spec:
 | `machines[].sshKeyPath` | Path to SSH private key | `""` |
 | `machines[].role` | Machine role (worker/control-plane) | `"worker"` |
 
-### Root-Based Configuration
+### Node Configuration
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `machineConfig.user.name` | Username for k0s service | `"root"` |
-| `machineConfig.user.home` | Home directory | `"/root"` |
-| `machineConfig.paths.k0sBinary` | k0s binary path | `"/usr/local/bin/k0s"` |
-| `machineConfig.paths.k0sConfig` | k0s config directory | `"/etc/k0s"` |
-| `machineConfig.paths.systemdUnit` | Systemd service file path | `"/etc/systemd/system/k0s.service"` |
+| `controlPlane.files` | Files to create on control plane nodes | `[]` |
+| `controlPlane.preStartCommands` | Commands before k0s starts on control plane | `["mkdir -p /var/lib/k0s", "mkdir -p /etc/k0s"]` |
+| `worker.files` | Files to create on worker nodes | `[]` |
+| `worker.preStartCommands` | Commands before k0s starts on workers | `["mkdir -p /var/lib/k0s", "mkdir -p /etc/k0s"]` |
 
 ## Advanced Configuration
 

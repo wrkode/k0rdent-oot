@@ -10,25 +10,11 @@ spec:
       downloadURL: "{{ .Values.k0s.downloadURL }}"
       {{- end }}
       version: {{ .Values.k0s.version }}
-      args:
-        # Root-specific arguments using standard system paths
-        - --data-dir={{ .Values.machineConfig.paths.k0sConfig }}
-        - --config={{ .Values.machineConfig.paths.k0sConfig }}/k0s.yaml
+      files:
+      {{- if .Values.worker.files }}
+        {{- toYaml .Values.worker.files | nindent 8 }}
+      {{- end }}
       preStartCommands:
-        # Create necessary directories as root (no sudo needed)
-        {{- with .Values.machineConfig.preStartCommands }}
-          {{- toYaml . | nindent 8 }}
-        {{- end }}
-        # Download and install k0s binary to system directory
-        - "curl -sSLf https://get.k0s.sh | sh -s -- --k0s-version={{ .Values.k0s.version }}"
-        - "mv /tmp/k0s {{ .Values.machineConfig.paths.k0sBinary }}"
-        - "chmod +x {{ .Values.machineConfig.paths.k0sBinary }}"
-        # Create systemd system service
-        - "cat > {{ .Values.machineConfig.paths.systemdUnit }} << 'EOF'"
-        - |
-          {{ include "k0s.systemd.service" . | nindent 10 }}
-        - "EOF"
-      postStartCommands:
-        {{- with .Values.machineConfig.postStartCommands }}
-          {{- toYaml . | nindent 8 }}
-        {{- end }}
+      {{- with .Values.worker.preStartCommands }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -56,25 +56,18 @@ spec:
               mode: vxlan
               vxlanPort: 6789
     
-    # Machine configuration for root-based deployment
-    machineConfig:
-      user:
-        name: "root"
-        home: "/root"
-        createUser: false
-      paths:
-        k0sBinary: "/usr/local/bin/k0s"
-        k0sConfig: "/etc/k0s"
-        systemdUnit: "/etc/systemd/system/k0s.service"
+    # Control plane and worker configuration
+    controlPlane:
+      files: []
       preStartCommands:
-        - "mkdir -p /usr/local/bin"
-        - "mkdir -p /etc/k0s"
         - "mkdir -p /var/lib/k0s"
-        - "export PATH=/usr/local/bin:$PATH"
-      postStartCommands:
-        - "systemctl daemon-reload"
-        - "systemctl enable k0s"
-        - "systemctl start k0s"
+        - "mkdir -p /etc/k0s"
+    
+    worker:
+      files: []
+      preStartCommands:
+        - "mkdir -p /var/lib/k0s"
+        - "mkdir -p /etc/k0s"
     
     # Enable health checks
     components:

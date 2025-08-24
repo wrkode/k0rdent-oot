@@ -6,4 +6,4 @@ metadata:
   namespace: {{ .Values.config.namespace | default .Release.Namespace | trunc 63 }}
 spec:
   interval: 10m0s
-  url: ghcr.io/k0rdent-oot/oot/charts/
+  url: https://k0rdent-oot.github.io/charts

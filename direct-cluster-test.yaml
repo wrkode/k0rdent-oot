@@ -1,0 +1,97 @@
+# Direct cluster deployment without ClusterTemplate
+# This tests if the cluster-api resources work directly
+
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: direct-remote-test
+  namespace: kcm-system
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - 10.243.0.0/16
+    services:
+      cidrBlocks:
+      - 10.95.0.0/16
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: direct-remote-test-cp
+    namespace: kcm-system
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: RemoteCluster
+    name: direct-remote-test
+    namespace: kcm-system
+
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: RemoteCluster
+metadata:
+  name: direct-remote-test
+  namespace: kcm-system
+spec:
+  controlPlaneServiceTemplate:
+    spec:
+      type: LoadBalancer
+
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: direct-remote-test-cp
+  namespace: kcm-system
+spec:
+  replicas: 1
+  version: v1.31.5+k0s.0
+  k0sConfigSpec:
+    args:
+      - --enable-worker
+      - --disable-components=konnectivity-server
+    preStartCommands:
+      - "mkdir -p /var/lib/k0s"
+      - "mkdir -p /etc/k0s"
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true"
+        network:
+          podCIDR: 10.243.0.0/16
+          serviceCIDR: 10.95.0.0/16
+          provider: calico
+          calico:
+            mode: vxlan
+            vxlanPort: 6789
+            envVars:
+              CALICO_IPV4POOL_CIDR: "10.243.0.0/16"
+              CLUSTER_TYPE: "k8s"
+              CALICO_IPV4POOL_IPIP: "Never"
+              CALICO_IPV4POOL_VXLAN: "Always"
+              FELIX_VXLANPORT: "6789"
+              FELIX_ALLOWVXLANPACKETSFROMWORKLOADS: "true"
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+      kind: RemoteMachineTemplate
+      name: direct-remote-test-rmt
+      namespace: kcm-system
+
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: RemoteMachineTemplate
+metadata:
+  name: direct-remote-test-rmt
+  namespace: kcm-system
+spec:
+  template:
+    spec:
+      address: "127.0.0.1"
+      user: "root"
+      port: 22
+      useSudo: false

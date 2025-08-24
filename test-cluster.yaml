@@ -1,0 +1,29 @@
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: test-remote-cluster
+  namespace: kcm-system
+spec:
+  template: remote-cluster-nosudo-1-0-0
+  credential: remote-nosudo-cred
+  config:
+    controlPlaneNumber: 1
+    workersNumber: 1
+    machines:
+      - address: "127.0.0.1"
+        user: "root"
+        port: 22
+        role: "worker"
+    k0smotron:
+      service:
+        type: LoadBalancer
+    k0s:
+      version: v1.31.5+k0s.0
+    controlPlane:
+      preStartCommands:
+        - "mkdir -p /var/lib/k0s"
+        - "mkdir -p /etc/k0s"
+    worker:
+      preStartCommands:
+        - "mkdir -p /var/lib/k0s"
+        - "mkdir -p /etc/k0s"

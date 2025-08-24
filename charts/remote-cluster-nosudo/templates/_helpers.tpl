@@ -90,32 +90,4 @@ Create the name of the machine deployment
 {{- printf "%s-md" (include "cluster.name" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{/*
-Generate k0s systemd service for root user
-*/}}
-{{- define "k0s.systemd.service" -}}
-[Unit]
-Description=k0s - Zero Friction Kubernetes
-Documentation=https://k0sproject.io
-After=network-online.target
-Wants=network-online.target
 
-[Service]
-Type=notify
-User=root
-Group=root
-ExecStart={{ .Values.machineConfig.paths.k0sBinary }} worker --config={{ .Values.machineConfig.paths.k0sConfig }}/k0s.yaml
-Restart=always
-RestartSec=5
-KillMode=process
-TimeoutStopSec=300
-OOMScoreAdjust=-999
-Delegate=yes
-LimitNOFILE=1048576
-LimitNPROC=1048576
-LimitCORE=infinity
-TasksMax=infinity
-
-[Install]
-WantedBy=multi-user.target
-{{- end }}
